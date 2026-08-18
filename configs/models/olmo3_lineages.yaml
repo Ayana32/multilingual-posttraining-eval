@@ -1,0 +1,117 @@
+# OLMo 3 7B checkpoint registry — Phase 0 verified
+#
+# Every field below was confirmed against the HuggingFace Hub API directly
+# (curl https://huggingface.co/api/models/<id>, config.json, chat_template.jinja),
+# not inferred from repo names or search snippets. See docs/phase0-findings.md
+# section 1 for the full verification log and URLs.
+#
+# Verified: 2026-08-18
+
+selected_for_mvp: instruct
+
+lineages:
+  instruct:
+    architecture: Olmo3ForCausalLM
+    parameters: 7.298B
+    license: apache-2.0
+    chat_template_file: chat_template.jinja
+    chat_template_notes: >
+      ChatML-style (<|im_start|>/<|im_end|>). IMPORTANT: when no system message
+      is supplied, the template injects a default system prompt framing the
+      model as "a helpful function-calling AI assistant" even when no tools are
+      passed. This default must be applied (or deliberately, consistently
+      overridden and documented) identically across all four stages and both
+      languages — an inconsistent system prompt across runs would itself be a
+      confound.
+    status: selected_for_mvp
+    stages:
+      - stage: base
+        hf_repo_id: allenai/Olmo-3-1025-7B
+        revision: main
+        dtype: bfloat16
+        base_model: null
+        role: pretrain-only checkpoint, no instruction tuning
+        verified_via: "HF API + config.json"
+      - stage: sft
+        hf_repo_id: allenai/Olmo-3-7B-Instruct-SFT
+        revision: main
+        dtype: bfloat16
+        base_model: allenai/Olmo-3-1025-7B
+        role: supervised fine-tuning
+        verified_via: "HF API base_model tag: base_model:allenai/Olmo-3-1025-7B"
+      - stage: dpo
+        hf_repo_id: allenai/Olmo-3-7B-Instruct-DPO
+        revision: main
+        dtype: bfloat16
+        base_model: allenai/Olmo-3-7B-Instruct-SFT
+        role: direct preference optimization
+        verified_via: "HF API base_model tag: base_model:allenai/Olmo-3-7B-Instruct-SFT"
+        known_issue: >
+          Model card's dataset tag reads "dataset:allenai/Dolci-Think-DPO-7B",
+          which looks like an upstream copy-paste error (should plausibly read
+          Dolci-Instruct-DPO-7B). Confirmed present via direct API check. Does
+          not affect checkpoint identity — the base_model chain is internally
+          consistent and is the authoritative link, not the dataset tag.
+      - stage: rlvr
+        hf_repo_id: allenai/Olmo-3-7B-Instruct
+        revision: main
+        dtype: bfloat16
+        base_model: allenai/Olmo-3-7B-Instruct-DPO
+        role: >
+          reinforcement learning with verifiable rewards. AI2's own README table
+          (fetched from allenai/Olmo-3-7B-Instruct-DPO/raw/main/README.md)
+          labels this row "Final Models (RLVR)" — this is AI2's terminology,
+          not an inference from naming.
+        verified_via: "HF API base_model tag + AI2 official stage table in README"
+
+  think:
+    architecture: Olmo3ForCausalLM
+    parameters: 7.298B
+    license: apache-2.0
+    status: verified_but_not_selected_for_mvp
+    rejection_reason: >
+      Equally complete and verifiable 4-stage trail, same base weights. Rejected
+      for MVP because its chat template forces a <think>...</think> reasoning
+      block before the answer, which is a confound for behavioral safety scoring:
+      a stage-over-stage change could reflect reasoning-trace length/content
+      changes rather than the post-training stage itself, and requires additional
+      parsing before any refusal/compliance label can be extracted. Retained as a
+      documented could-have extension, particularly relevant to any future
+      instrumental-convergence-style follow-up (reasoning models are the more
+      natural target for that construct).
+    stages:
+      - stage: base
+        hf_repo_id: allenai/Olmo-3-1025-7B
+        revision: main
+      - stage: sft
+        hf_repo_id: allenai/Olmo-3-7B-Think-SFT
+        revision: main
+        base_model: allenai/Olmo-3-1025-7B
+      - stage: dpo
+        hf_repo_id: allenai/Olmo-3-7B-Think-DPO
+        revision: main
+        base_model: allenai/Olmo-3-7B-Think-SFT
+      - stage: rlvr
+        hf_repo_id: allenai/Olmo-3-7B-Think
+        revision: main
+        base_model: allenai/Olmo-3-7B-Think-DPO
+
+local_dev_quantized:
+  note: >
+    Phase 1 resolved this fully (previously unconfirmed for the intermediate
+    stages). Checked via HF API + page-title diffing against a known-nonexistent
+    repo baseline (a plain API 401 turned out NOT to reliably mean "gated" — it
+    was returned identically for genuinely nonexistent repos too; page-title
+    "404 – Hugging Face" vs. a real title was the reliable signal). Result: SFT
+    has MLX builds, DPO does not. Only Base + SFT + RLVR of the Instruct lineage
+    can be smoke-tested locally with real quantized weights; DPO cannot.
+  confirmed:
+    - mlx-community/Olmo-3-1025-7B-8bit
+    - mlx-community/Olmo-3-7B-Instruct-SFT-bfloat16
+    - mlx-community/Olmo-3-7B-Instruct-SFT-8bit
+    - mlx-community/Olmo-3-7B-Instruct-SFT-4bit
+    - mlx-community/Olmo-3-7B-Instruct-8bit
+  confirmed_absent:
+    - mlx-community/Olmo-3-7B-Instruct-DPO-bfloat16  # genuine 404, verified against nonexistent-repo baseline
+    - mlx-community/Olmo-3-7B-Instruct-DPO-8bit       # genuine 404, verified against nonexistent-repo baseline
+    - mlx-community/Olmo-3-7B-Instruct-DPO-4bit       # genuine 404, verified against nonexistent-repo baseline

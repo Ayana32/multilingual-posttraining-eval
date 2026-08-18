@@ -6,6 +6,6 @@ __pycache__/
 venv/
 .DS_Store
 results/
-models/
+/models/
 *.safetensors
 *.bin
