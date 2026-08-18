@@ -1,0 +1,114 @@
+# Benchmark registry — Phase 0 verified
+#
+# Sources fetched directly (dataset cards, HF datasets-server API, GitHub repos,
+# arXiv HTML). See docs/phase0-findings.md section 2 for the full bake-off table
+# and rejection rationale.
+#
+# Verified: 2026-08-18
+
+benchmarks:
+  - name: polyguard_prompts
+    role: primary
+    hf_dataset_id: ToxicityPrompts/PolyGuardPrompts
+    split: test
+    license: CC-BY-4.0
+    total_items: 29300
+    languages_total: 17
+    target_languages: [en, ko]
+    construct: "prompt harm / response harm / refusal (general safety moderation)"
+    scoring: >
+      Dataset ships its own multilingual PolyGuard classifier (validated across
+      all 17 languages including Korean) — primary scorer, avoiding a generic
+      LLM-judge Korean-competence confound. Also carries human-annotation
+      agreement metadata.
+    resolved_in_phase1:
+      korean_item_count: 1725   # confirmed by downloading the parquet directly and filtering language=='Korean'
+      total_dataset_rows: 29325 # 17 languages x 1725, corrected from the Phase 0 card-reported ~29300
+      korean_label_balance: {unharmful: 945, harmful: 754}   # identical to the English subset's balance
+      parallel_item_key: "id"  # confirmed: same 1,725 integer ids (0-1724) present in every language; id=0 in
+                                # Korean and id=0 in English are the same underlying prompt, translated
+      provenance: >
+        Korean items are translated, not native — confirmed by directly comparing
+        prompt_harm_label between the English and Korean rows sharing the same id:
+        98.49% agreement (1,699/1,725), independently reproducing the source
+        paper's own reported figure of 98.4% overall label agreement and 99.1%
+        bilingual-evaluator-rated translation quality (arXiv 2504.04377). Treat
+        as high-quality verified translation, not native Korean, when
+        interpreting cross-lingual deltas.
+      verified_via: >
+        Downloaded https://huggingface.co/datasets/ToxicityPrompts/PolyGuardPrompts/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet
+        directly and inspected with pandas; cross-checked the label-agreement
+        figure against arXiv 2504.04377.
+
+  - name: xstest_ko
+    role: secondary
+    canonical_source: "https://github.com/paul-rottger/xstest"   # original authors' repo — treat as source of truth
+    hf_mirror_status: >
+      Checked natolambert/xstest-v2-copy directly via datasets-server: it is NOT
+      the raw 450-prompt set — it's 2,700 rows (prompt + model completions +
+      human annotations + final_label), i.e. an annotated-responses artifact, not
+      the bare prompt list. No HF mirror was confirmed in Phase 0 to be a faithful
+      copy of just the 450 XSTest v2 prompts. Phase 1 must pull the prompt set
+      directly from the GitHub source above (or verify one specific HF mirror
+      against it row-for-row) before using it — do not assume any HF repo name
+      found by search is the right one without this check.
+    license: CC-BY-4.0
+    total_items_en: 450
+    composition: "250 safe prompts (incl. deliberately scary-sounding-but-benign) + 200 unsafe prompts, 18 types (9 safe/unsafe contrast pairs)"
+    resolved_in_phase1:
+      canonical_file: "xstest_prompts.csv (repo root, confirmed by direct fetch)"
+      columns: [id, prompt, type, label, focus, note]
+      row_count: 450   # confirmed by direct download and count, matches composition above exactly
+      local_snapshot: "data/xstest/xstest_prompts_v2.csv"
+      local_snapshot_fetched: "2026-08-18 from https://raw.githubusercontent.com/paul-rottger/xstest/main/xstest_prompts.csv"
+    target_languages: [en, ko]
+    construct: "exaggerated-safety / over-refusal vs. genuine-harm refusal"
+    scoring: "rule-based refusal-pattern classifier (no benchmark-native judge shipped)"
+    korean_status: >
+      STILL NOT READY FOR PHASE 2 REPORTING. A small (18-item, 9 safe/unsafe
+      pairs) DRAFT Korean translation was produced in Phase 1 at
+      data/xstest_ko_draft/xstest_ko_draft.jsonl purely to exercise the loader
+      and pipeline end-to-end — it is AI-translated, has NOT had the
+      native-speaker review the Phase 0 protocol requires, and must not be used
+      for any reported Phase 2 result until that review happens. Two items were
+      identified and excluded during drafting as not surviving translation (see
+      data/xstest_ko_draft/excluded_items.jsonl) — concrete confirmation that
+      the exclusion risk flagged in Phase 0 is real, not hypothetical. The full
+      ~100-150 item stratified subsample called for in docs/phase0-findings.md
+      section 4 is NOT yet produced.
+
+  - name: instrumental_eval
+    role: rejected_for_mvp
+    source: "https://github.com/yf-he/InstrumentalEval"
+    license: CC-BY-4.0
+    total_items: 76
+    categories: 6
+    target_languages: [en]
+    construct: "instrumental convergence under adversarial prompt-based steering"
+    scoring: "LLM-judge only, no rule-based fallback in the original paper"
+    reason_rejected: >
+      Construct mismatch with "safety-relevant behaviour" as framed in the
+      research question (narrow agentic-misalignment subtype, not general harm
+      refusal). English-only with zero multilingual precedent. Never applied to
+      an open-weight model or across post-training stages of a single model
+      family — no existing evidence its LLM-judge protocol transfers cleanly to
+      a 7B open-weight model's outputs. Retained as a possible English-only
+      supplementary probe for the RLVR stage specifically in a later phase (the
+      paper's own finding — RL training raises instrumental-convergence rates —
+      is directly on-topic for this project's RLVR interest) but excluded from
+      MVP scope and from any multilingual claim.
+
+  - name: belebele_ko_control
+    role: language_competence_control
+    hf_dataset_id: facebook/belebele
+    config: kor_Hang
+    license: CC-BY-SA-4.0
+    total_items: 900
+    verified_via: "https://datasets-server.huggingface.co/size?dataset=facebook/belebele&config=kor_Hang"
+    construct: >
+      4-way multiple-choice reading comprehension over FLORES-200 passages,
+      parallel across all 122 Belebele language configs via question_number/
+      link fields — isolates general Korean reading/instruction-following
+      competence entirely from safety behaviour.
+    scoring: "exact-match on correct_answer_num — fully deterministic, zero judge dependency"
+    mvp_subsample: "~40-50 items, stratified, paired to their English counterpart via question_number"

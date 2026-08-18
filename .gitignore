@@ -1,0 +1,11 @@
+.env
+.env.*
+__pycache__/
+*.pyc
+.venv/
+venv/
+.DS_Store
+results/
+models/
+*.safetensors
+*.bin
