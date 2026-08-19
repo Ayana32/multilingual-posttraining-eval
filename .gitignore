@@ -9,3 +9,7 @@ results/
 /models/
 *.safetensors
 *.bin
+.pytest_cache/
+*.egg-info/
+data/cache/
+build/

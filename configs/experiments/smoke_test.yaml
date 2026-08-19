@@ -1,0 +1,17 @@
+# Tiny smoke-test experiment: exercises every stage/benchmark/language
+# combination with a handful of items each, using the MockEvaluator (no
+# real model weights). Purpose is to validate the pipeline wiring, not to
+# produce a research result -- see docs/phase1-notes.md.
+
+name: smoke_test
+lineage: instruct
+stages: [base, sft, dpo, rlvr]
+languages: [en, ko]
+benchmarks: [polyguard_prompts, xstest, belebele_ko_control]
+limit_per_benchmark: 4
+seed: 0
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 64
+  seed: 0

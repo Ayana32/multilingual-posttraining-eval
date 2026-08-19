@@ -24,21 +24,38 @@ benchmarks:
     resolved_in_phase1:
       korean_item_count: 1725   # confirmed by downloading the parquet directly and filtering language=='Korean'
       total_dataset_rows: 29325 # 17 languages x 1725, corrected from the Phase 0 card-reported ~29300
-      korean_label_balance: {unharmful: 945, harmful: 754}   # identical to the English subset's balance
+      korean_prompt_harm_label_value_counts:  # dropna=False -- see docs/phase1-review.md section 1
+        unharmful: 945
+        harmful: 754
+        missing: 26   # same 26 ids missing in English too; prompt_label populated (20 safe/6 unsafe), prompt_harm_agreement null for all 26
       parallel_item_key: "id"  # confirmed: same 1,725 integer ids (0-1724) present in every language; id=0 in
                                 # Korean and id=0 in English are the same underlying prompt, translated
+      en_ko_label_agreement:   # CORRECTED 2026-08-18 -- see docs/phase1-review.md section 1 for the original bug
+        comparable_pairs: 1699    # both languages have a non-null prompt_harm_label
+        agreeing_pairs: 1699
+        disagreeing_pairs: 0
+        agreement_rate: 1.0
+        pairs_with_missing_label: 26   # excluded from the agreement calc, not counted as disagreements
       provenance: >
-        Korean items are translated, not native — confirmed by directly comparing
-        prompt_harm_label between the English and Korean rows sharing the same id:
-        98.49% agreement (1,699/1,725), independently reproducing the source
-        paper's own reported figure of 98.4% overall label agreement and 99.1%
-        bilingual-evaluator-rated translation quality (arXiv 2504.04377). Treat
-        as high-quality verified translation, not native Korean, when
-        interpreting cross-lingual deltas.
+        Korean items are translated, not native, per the source paper's own
+        methodology description (arXiv 2504.04377: bilingual-evaluator-rated
+        translation quality 99.1%, aggregate 17-language label agreement
+        98.4%). This project's own directly-computed EN-KO agreement on the
+        1,699 comparable pairs is 100%, not 98.49% as an earlier draft of this
+        file claimed -- that figure was a NaN-comparison bug (see
+        docs/phase1-review.md section 1), not a genuine measurement, and its
+        closeness to the paper's 98.4% aggregate was coincidental. This
+        project's 100%-on-1,699-pairs figure is a narrower, correctly-computed
+        observation about this specific EN-KO slice, and does not itself
+        confirm or dispute the paper's separately-reported 17-language
+        aggregate. Treat Korean items as high-quality verified translation,
+        not native Korean, when interpreting cross-lingual deltas.
       verified_via: >
         Downloaded https://huggingface.co/datasets/ToxicityPrompts/PolyGuardPrompts/resolve/refs%2Fconvert%2Fparquet/default/test/0000.parquet
-        directly and inspected with pandas; cross-checked the label-agreement
-        figure against arXiv 2504.04377.
+        directly and inspected with pandas, twice: once in Phase 1 (produced
+        the buggy 98.49% figure) and once in the Phase 1 review pass (produced
+        the corrected 100%/1,699 figure, with the discrepancy's root cause
+        identified and reproduced deliberately -- see docs/phase1-review.md).
 
   - name: xstest_ko
     role: secondary
