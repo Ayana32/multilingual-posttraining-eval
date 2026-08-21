@@ -3,9 +3,32 @@ from pathlib import Path
 import pytest
 import yaml
 
-from mpe.checkpoints import CheckpointRegistry, CheckpointStage
+from mpe.checkpoints import (
+    COMPARABLE_TRAJECTORY_STAGES,
+    DESCRIPTIVE_REFERENCE_STAGES,
+    CheckpointRegistry,
+    CheckpointStage,
+)
 
 REGISTRY_PATH = Path("configs/models/olmo3_lineages.yaml")
+
+
+def test_base_is_descriptive_reference_not_comparable_trajectory():
+    assert CheckpointStage.BASE in DESCRIPTIVE_REFERENCE_STAGES
+    assert CheckpointStage.BASE not in COMPARABLE_TRAJECTORY_STAGES
+
+
+def test_comparable_trajectory_is_exactly_sft_dpo_rlvr_in_order():
+    assert COMPARABLE_TRAJECTORY_STAGES == [
+        CheckpointStage.SFT,
+        CheckpointStage.DPO,
+        CheckpointStage.RLVR,
+    ]
+
+
+def test_trajectory_and_reference_stages_are_disjoint_and_cover_all_stages():
+    assert set(COMPARABLE_TRAJECTORY_STAGES) & set(DESCRIPTIVE_REFERENCE_STAGES) == set()
+    assert set(COMPARABLE_TRAJECTORY_STAGES) | set(DESCRIPTIVE_REFERENCE_STAGES) == set(CheckpointStage)
 
 
 def test_loads_real_registry_file():

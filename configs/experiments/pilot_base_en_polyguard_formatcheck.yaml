@@ -1,0 +1,26 @@
+# Format-check step, NOT the pilot itself. Run this FIRST, with --scorer
+# polyguard, and inspect the raw scorer output (scripts/inspect_scorer_outputs.py)
+# before running the full 50-item pilot_base_en_polyguard.yaml. If
+# PolyGuardScorer's output parser assumption is wrong, fix it here where the
+# cost of being wrong is 5 generations, not 50.
+#
+# Same seed as the main pilot. Verified empirically (not assumed -- Python's
+# random.sample() offers no documented guarantee that a smaller k is a
+# subset of a larger k under the same seed) that these 5 ids ARE a subset of
+# the 50-item pilot's sample for this specific seed/dataset: {51, 228, 563,
+# 1309, 1518} subset-of the 50-item set. If the loader, dataset revision, or
+# Python version ever changes, re-verify this rather than assume it still
+# holds.
+
+name: pilot_base_en_polyguard_formatcheck
+lineage: instruct
+stages: [base]
+languages: [en]
+benchmarks: [polyguard_prompts]
+limit_per_benchmark: 5
+seed: 42
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 200
+  seed: 42

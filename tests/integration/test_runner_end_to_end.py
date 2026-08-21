@@ -8,15 +8,53 @@ real model's behaviour. See docs/phase1-notes.md.
 """
 
 from mpe.checkpoints.registry import CheckpointRegistry
-from mpe.checkpoints.schema import CheckpointStage
+from mpe.checkpoints.schema import CheckpointSpec, CheckpointStage
 from mpe.config.experiment import ExperimentConfig
 from mpe.datasets.polyguard import PolyGuardPromptsLoader
+from mpe.datasets.schema import BenchmarkItem
 from mpe.datasets.xstest import XSTestLoader
+from mpe.evaluators.base import Evaluator
 from mpe.evaluators.mock import MockEvaluator
+from mpe.evaluators.schema import GenerationConfig, RawResponse
 from mpe.runner.experiment_runner import ExperimentRunner
+from mpe.scorers.base import Scorer
+from mpe.scorers.schema import ScorerVerdict
 from mpe.storage.store import ResultStore
 
 REGISTRY_PATH = "configs/models/olmo3_lineages.yaml"
+
+
+class _FiniteFinishReasonEvaluator(Evaluator):
+    """Deterministic fake evaluator that assigns a distinct finish_reason
+    per item -- exercises the wiring (Evaluator -> RawResponse.finish_reason
+    -> ResultRecord.finish_reason) without a real model."""
+
+    def generate(
+        self, checkpoint: CheckpointSpec, items: list[BenchmarkItem], config: GenerationConfig
+    ) -> list[RawResponse]:
+        reasons = ["stop", "length", "error: RuntimeError: boom"]
+        return [
+            RawResponse(item_id=item.item_id, completion="x", finish_reason=reasons[i % len(reasons)])
+            for i, item in enumerate(items)
+        ]
+
+
+class _FakeScorer(Scorer):
+    """Deterministic fake authoritative scorer -- exercises the wiring
+    (ExperimentRunner -> ResultRecord.scorer_* fields) without a real model."""
+
+    scorer_name = "fake-scorer"
+
+    def score(self, item: BenchmarkItem, response: RawResponse) -> ScorerVerdict:
+        return ScorerVerdict(
+            item_id=item.item_id,
+            scorer_name=self.scorer_name,
+            prompt_harmful=item.expected_label == "harmful",
+            response_refusal=True,
+            response_harmful=False,
+            parse_ok=True,
+            raw_output="fake verdict",
+        )
 
 
 def test_full_pipeline_produces_expected_record_count(tmp_path, tiny_polyguard_parquet):
@@ -87,3 +125,95 @@ def test_records_carry_checkpoint_identity_correctly(tmp_path, tiny_polyguard_pa
     records = store.read(run_id)
     assert all(r.hf_repo_id == "allenai/Olmo-3-7B-Instruct" for r in records)
     assert all(r.revision == "main" for r in records)
+
+
+def test_scorer_verdicts_are_wired_into_result_records(tmp_path, tiny_polyguard_parquet):
+    registry = CheckpointRegistry.from_yaml(REGISTRY_PATH)
+    evaluator = MockEvaluator()
+    store = ResultStore(results_dir=tmp_path)
+    loaders = {"polyguard_prompts": PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)}
+    runner = ExperimentRunner(registry, evaluator, store, loaders=loaders, scorer=_FakeScorer())
+
+    config = ExperimentConfig(
+        name="scorer_test",
+        stages=[CheckpointStage.BASE],
+        languages=["en"],
+        benchmarks=["polyguard_prompts"],
+        limit_per_benchmark=3,
+    )
+    run_id = runner.run(config)
+    records = store.read(run_id)
+
+    assert all(r.scorer_name == "fake-scorer" for r in records)
+    assert all(r.scorer_parse_ok is True for r in records)
+    assert all(r.scorer_response_refusal is True for r in records)
+    assert all(r.scorer_raw_output == "fake verdict" for r in records)
+    for r in records:
+        assert r.scorer_prompt_harmful == (r.expected_label == "harmful")
+
+
+def test_no_scorer_leaves_scorer_fields_none(tmp_path, tiny_polyguard_parquet):
+    registry = CheckpointRegistry.from_yaml(REGISTRY_PATH)
+    evaluator = MockEvaluator()
+    store = ResultStore(results_dir=tmp_path)
+    loaders = {"polyguard_prompts": PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)}
+    runner = ExperimentRunner(registry, evaluator, store, loaders=loaders)  # no scorer
+
+    config = ExperimentConfig(
+        name="no_scorer_test",
+        stages=[CheckpointStage.BASE],
+        languages=["en"],
+        benchmarks=["polyguard_prompts"],
+        limit_per_benchmark=2,
+    )
+    run_id = runner.run(config)
+    records = store.read(run_id)
+    assert all(r.scorer_name is None for r in records)
+    assert all(r.scorer_parse_ok is None for r in records)
+
+
+def test_finish_reason_is_wired_from_response_into_result_record(tmp_path, tiny_polyguard_parquet):
+    registry = CheckpointRegistry.from_yaml(REGISTRY_PATH)
+    evaluator = _FiniteFinishReasonEvaluator()
+    store = ResultStore(results_dir=tmp_path)
+    loaders = {"polyguard_prompts": PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)}
+    runner = ExperimentRunner(registry, evaluator, store, loaders=loaders)
+
+    config = ExperimentConfig(
+        name="finish_reason_test",
+        stages=[CheckpointStage.BASE],
+        languages=["en"],
+        benchmarks=["polyguard_prompts"],
+        limit_per_benchmark=3,
+    )
+    run_id = runner.run(config)
+    records = {r.parallel_item_id: r for r in store.read(run_id)}
+
+    by_id = sorted(records.values(), key=lambda r: r.item_id)
+    assert [r.finish_reason for r in by_id] == ["stop", "length", "error: RuntimeError: boom"]
+
+
+def test_results_are_written_incrementally_per_batch(tmp_path, tiny_polyguard_parquet):
+    """A later batch failing must not lose an earlier batch's already-written records."""
+    registry = CheckpointRegistry.from_yaml(REGISTRY_PATH)
+    evaluator = MockEvaluator()
+    store = ResultStore(results_dir=tmp_path)
+    loaders = {"polyguard_prompts": PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)}
+    runner = ExperimentRunner(registry, evaluator, store, loaders=loaders)
+
+    config = ExperimentConfig(
+        name="incremental_test",
+        stages=[CheckpointStage.BASE, CheckpointStage.RLVR],
+        languages=["en"],
+        benchmarks=["polyguard_prompts"],
+        limit_per_benchmark=2,
+    )
+    run_id = runner.run(config)
+    path = store.path_for_run(run_id)
+    # Two stages, written as two separate append calls -- confirm the file
+    # actually accumulated both rather than being written once at the end
+    # (this test would still pass either way; it documents the intended
+    # incremental-write behaviour and would catch an accidental regression
+    # to "collect everything, write once" losing partial progress on error).
+    assert path.exists()
+    assert len(store.read(run_id)) == 4

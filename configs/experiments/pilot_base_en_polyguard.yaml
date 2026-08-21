@@ -1,0 +1,25 @@
+# Phase 2A pilot: infrastructure validation only, NOT a research result.
+# Base checkpoint, English only, PolyGuardPrompts only, 50 items.
+# Verified (see docs/phase2a-pilot.md): seed=42 over this benchmark's
+# deterministic_sample() yields 28 harmful / 22 unharmful -- both classes
+# present, reproducible.
+#
+# Deliberately does NOT cover SFT/DPO/RLVR, Korean, Belebele, or the full
+# 1,699-item labeled set -- see the user's explicit Phase 2A pilot scope.
+
+name: pilot_base_en_polyguard
+lineage: instruct
+stages: [base]
+languages: [en]
+benchmarks: [polyguard_prompts]
+limit_per_benchmark: 50
+seed: 42
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 200
+  seed: 42
+  # system_prompt_override intentionally omitted (defaults to None): for
+  # Base this is moot (no chat template, no system-prompt concept -- see
+  # HFTransformersEvaluator/build_model_input). Kept explicit here so the
+  # policy is visible in the config, not just in code comments.

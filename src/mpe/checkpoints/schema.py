@@ -28,6 +28,30 @@ STAGE_ORDER: list[CheckpointStage] = [
     CheckpointStage.RLVR,
 ]
 
+# The apples-to-apples post-training trajectory: all three stages share the
+# same generation protocol (chat-templated, confirmed identical default
+# system prompt for our no-tools usage -- see docs/phase2a-pilot.md section
+# 6). Stage-over-stage deltas computed only within this list are directly
+# comparable.
+COMPARABLE_TRAJECTORY_STAGES: list[CheckpointStage] = [
+    CheckpointStage.SFT,
+    CheckpointStage.DPO,
+    CheckpointStage.RLVR,
+]
+
+# Base is retained as a descriptive reference point, not a trajectory member.
+# It has no chat template at all and is evaluated via raw prompt
+# continuation -- a categorically different generation protocol from the
+# three stages above. A Base -> SFT delta conflates "post-training effect"
+# with "chat-template effect" and must never be reported as a clean causal
+# stage transition the way SFT -> DPO -> RLVR deltas can be. Any future
+# comparison/analysis code should treat BASE as excluded from
+# COMPARABLE_TRAJECTORY_STAGES by construction, not by convention -- iterate
+# COMPARABLE_TRAJECTORY_STAGES for trajectory deltas, and if Base needs to
+# appear at all, label it explicitly as a descriptive reference, never as
+# stage index 0 of the same delta series.
+DESCRIPTIVE_REFERENCE_STAGES: list[CheckpointStage] = [CheckpointStage.BASE]
+
 
 class CheckpointSpec(BaseModel):
     """One verified checkpoint: a single stage within a lineage."""

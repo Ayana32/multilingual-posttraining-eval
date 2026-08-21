@@ -20,6 +20,7 @@ from mpe.config.experiment import ExperimentConfig  # noqa: E402
 from mpe.evaluators.base import Evaluator  # noqa: E402
 from mpe.evaluators.mock import MockEvaluator  # noqa: E402
 from mpe.runner.experiment_runner import ExperimentRunner  # noqa: E402
+from mpe.scorers.base import Scorer  # noqa: E402
 from mpe.storage.store import ResultStore  # noqa: E402
 
 
@@ -31,6 +32,16 @@ def build_evaluator(name: str) -> Evaluator:
 
         return HFTransformersEvaluator()
     raise ValueError(f"Unknown evaluator '{name}'")
+
+
+def build_scorer(name: str | None) -> Scorer | None:
+    if name is None:
+        return None
+    if name == "polyguard":
+        from mpe.scorers.polyguard import PolyGuardScorer
+
+        return PolyGuardScorer()
+    raise ValueError(f"Unknown scorer '{name}'")
 
 
 def main() -> None:
@@ -45,13 +56,21 @@ def main() -> None:
     )
     parser.add_argument("--results-dir", default=Path("results"), type=Path)
     parser.add_argument("--evaluator", choices=["mock", "hf"], default="mock")
+    parser.add_argument(
+        "--scorer",
+        choices=["polyguard"],
+        default=None,
+        help="Authoritative Tier-2 scorer to run alongside generation. "
+        "Omit to rely on Tier-1 rule-based parsing only.",
+    )
     args = parser.parse_args()
 
     config = ExperimentConfig.from_yaml(args.experiment_config)
     registry = CheckpointRegistry.from_yaml(args.checkpoint_registry)
     evaluator = build_evaluator(args.evaluator)
+    scorer = build_scorer(args.scorer)
     store = ResultStore(args.results_dir)
-    runner = ExperimentRunner(registry, evaluator, store)
+    runner = ExperimentRunner(registry, evaluator, store, scorer=scorer)
 
     run_id = runner.run(config)
     records = store.read(run_id)

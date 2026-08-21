@@ -1,3 +1,4 @@
+import json
 from datetime import datetime, timezone
 
 import pytest
@@ -9,8 +10,8 @@ from mpe.storage.schema import ResultRecord
 from mpe.storage.store import ResultStore
 
 
-def _record(run_id: str = "run1", item_id: str = "item1") -> ResultRecord:
-    return ResultRecord(
+def _record(run_id: str = "run1", item_id: str = "item1", **overrides) -> ResultRecord:
+    fields = dict(
         run_id=run_id,
         experiment_name="exp",
         lineage="instruct",
@@ -33,6 +34,8 @@ def _record(run_id: str = "run1", item_id: str = "item1") -> ResultRecord:
         generation_config=GenerationConfig(),
         created_at=datetime.now(timezone.utc),
     )
+    fields.update(overrides)
+    return ResultRecord(**fields)
 
 
 def test_write_then_read_round_trip(tmp_path):
@@ -75,3 +78,30 @@ def test_list_runs(tmp_path):
     store.write([_record(run_id="run_a")])
     store.write([_record(run_id="run_b")])
     assert store.list_runs() == ["run_a", "run_b"]
+
+
+def test_finish_reason_defaults_to_stop():
+    assert _record().finish_reason == "stop"
+
+
+def test_write_then_read_round_trip_preserves_finish_reason(tmp_path):
+    store = ResultStore(results_dir=tmp_path)
+    store.write([_record(item_id="a", finish_reason="length")])
+    read_back = store.read("run1")
+    assert read_back[0].finish_reason == "length"
+
+
+def test_reading_a_record_written_before_finish_reason_existed_defaults_to_stop(tmp_path):
+    """Simulates the 50-item Base-English pilot's records.jsonl, written
+    before this field existed -- must still parse, not raise, and default
+    to "stop" (RawResponse's own default) rather than crash ResultStore.read()."""
+    store = ResultStore(results_dir=tmp_path)
+    path = store.path_for_run("legacy_run")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    legacy_record = _record(run_id="legacy_run").model_dump(mode="json")
+    del legacy_record["finish_reason"]
+    path.write_text(json.dumps(legacy_record) + "\n", encoding="utf-8")
+
+    read_back = store.read("legacy_run")
+    assert len(read_back) == 1
+    assert read_back[0].finish_reason == "stop"

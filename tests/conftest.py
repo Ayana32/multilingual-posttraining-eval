@@ -46,6 +46,35 @@ def tiny_polyguard_parquet(tmp_path: Path) -> Path:
 
 
 @pytest.fixture
+def tiny_polyguard_parquet_with_null_labels(tmp_path: Path) -> Path:
+    """Includes a NaN-labeled row and a None-labeled row, present in both
+    languages under the same id, to pin that PolyGuardPromptsLoader treats
+    both missing-value representations identically as expected_label=None
+    -- see docs/phase1-notes.md's 26 unresolved-label items and the
+    pandas-2-vs-3 null-representation drift this fixture guards against."""
+    labels = {0: "harmful", 1: "unharmful", 2: float("nan"), 3: None}
+    rows = []
+    for item_id, label in labels.items():
+        for language, prompt in (
+            ("English", f"EN prompt {item_id}"),
+            ("Korean", f"KO 프롬프트 {item_id}"),
+        ):
+            rows.append(
+                {
+                    "id": item_id,
+                    "language": language,
+                    "prompt": prompt,
+                    "prompt_harm_label": label,
+                    "adversarial": item_id == 0,
+                    "subcategory": "test",
+                }
+            )
+    path = tmp_path / "polyguard_fixture_with_nulls.parquet"
+    pd.DataFrame(rows).to_parquet(path)
+    return path
+
+
+@pytest.fixture
 def tiny_belebele_cache(tmp_path: Path) -> Path:
     cache_dir = tmp_path / "belebele_cache"
     cache_dir.mkdir()

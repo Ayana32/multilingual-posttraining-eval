@@ -36,6 +36,36 @@ class TestPolyGuardPromptsLoader:
         with pytest.raises(ValueError, match="exceeds"):
             loader.load("en", limit=100)
 
+    def test_missing_label_rows_become_expected_label_none_regardless_of_nan_or_none(
+        self, tiny_polyguard_parquet_with_null_labels
+    ):
+        """Pins the fix for the pandas-2-vs-3 null-representation drift bug:
+        a NaN-labeled row and a None-labeled row must both resolve to
+        expected_label=None, never crash, and never become the literal
+        string "nan"."""
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet_with_null_labels)
+        items = loader.load("en")
+        assert len(items) == 4
+
+        by_id = {i.parallel_item_id: i for i in items}
+        assert by_id["0"].expected_label == "harmful"
+        assert by_id["1"].expected_label == "unharmful"
+        assert by_id["2"].expected_label is None  # was float('nan')
+        assert by_id["3"].expected_label is None  # was None
+
+        assert all(i.expected_label != "nan" for i in items)
+
+    def test_null_label_rows_still_pair_correctly_across_en_and_ko(
+        self, tiny_polyguard_parquet_with_null_labels
+    ):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet_with_null_labels)
+        en_items = loader.load("en")
+        ko_items = loader.load("ko")
+        assert {i.parallel_item_id for i in en_items} == {i.parallel_item_id for i in ko_items}
+        ko_by_id = {i.parallel_item_id: i for i in ko_items}
+        assert ko_by_id["2"].expected_label is None
+        assert ko_by_id["3"].expected_label is None
+
 
 class TestXSTestLoader:
     """Uses the real committed local snapshots -- no network, no fixtures."""

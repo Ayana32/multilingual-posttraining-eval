@@ -7,7 +7,7 @@ dependencies = [
     "pydantic>=2.6",
     "pyyaml>=6.0",
     "requests>=2.31",
-    "pandas>=2.2",
+    "pandas>=2.2,<4",  # tested on 2.2.3 and 3.0.5; a jump to pandas 4 needs review before bumping
     "pyarrow>=15.0",
 ]
 
@@ -15,6 +15,7 @@ dependencies = [
 hf = [
     "transformers>=4.45",
     "torch>=2.3",
+    "accelerate>=0.30",  # required by from_pretrained(..., device_map=...)
 ]
 dev = [
     "pytest>=8.0",

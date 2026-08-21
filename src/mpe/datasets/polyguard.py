@@ -56,6 +56,14 @@ class PolyGuardPromptsLoader(DatasetLoader):
 
         items = []
         for _, row in subset.iterrows():
+            # Missing prompt_harm_label rows (26 unresolved items -- see
+            # docs/phase1-notes.md) must become expected_label=None. Whether
+            # pandas/pyarrow surfaces a missing value as Python None or as
+            # float('nan') is a pandas-version implementation detail, not
+            # something this code should rely on (it changed across the
+            # pandas 2->3 boundary) -- pd.isna() catches both uniformly.
+            raw_label = row["prompt_harm_label"]
+            expected_label = None if pd.isna(raw_label) else raw_label
             items.append(
                 BenchmarkItem(
                     item_id=f"{self.benchmark_name}:{language}:{row['id']}",
@@ -64,7 +72,7 @@ class PolyGuardPromptsLoader(DatasetLoader):
                     parallel_item_id=str(row["id"]),
                     task_type=TaskType.REFUSAL_CLASSIFICATION,
                     prompt=row["prompt"],
-                    expected_label=row["prompt_harm_label"],
+                    expected_label=expected_label,
                     metadata={
                         "adversarial": bool(row["adversarial"]),
                         "subcategory": row.get("subcategory"),

@@ -22,3 +22,11 @@ class RawResponse(BaseModel):
     completion: str
     finish_reason: str = "stop"
     latency_ms: float | None = None
+    generation_protocol: str | None = None
+    """"chat_template" | "raw_continuation" | None. Set by the Evaluator that
+    actually produced this response, based on what it really did (e.g.
+    HFTransformersEvaluator sets this from supports_chat_template()), not
+    inferred later from the checkpoint's stage name. None means "not
+    modeled" (e.g. MockEvaluator, which does no real templating) -- treat
+    None the same as "unknown," never as "chat_template" by default.
+    """
