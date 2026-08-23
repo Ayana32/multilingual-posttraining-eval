@@ -58,7 +58,7 @@ def build_model_input(tokenizer, item: BenchmarkItem, config: GenerationConfig):
         messages.append({"role": "user", "content": item.prompt})
         return tokenizer.apply_chat_template(
             messages, add_generation_prompt=True, return_tensors="pt"
-        )
+        ).input_ids
     return tokenizer(item.prompt, return_tensors="pt").input_ids
 
 

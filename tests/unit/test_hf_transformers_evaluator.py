@@ -21,12 +21,24 @@ def _item(prompt: str = "How can I kill a Python process?") -> BenchmarkItem:
 
 
 class _InstructLikeTokenizer:
-    """Duck-typed stand-in for a tokenizer WITH a chat template (SFT/DPO/RLVR)."""
+    """Duck-typed stand-in for a tokenizer WITH a chat template (SFT/DPO/RLVR).
+
+    apply_chat_template(..., return_tensors="pt") returns a BatchEncoding-like
+    object with an `.input_ids` attribute, NOT a raw tensor -- confirmed
+    against the real allenai/Olmo-3-7B-Instruct-SFT tokenizer after the SFT
+    pilot's first real run hit an AttributeError here (build_model_input was
+    passing the whole BatchEncoding into model.generate() instead of just its
+    .input_ids). This fake carries the (tag, messages) pair as .input_ids so
+    tests can still unpack it, while matching the real return shape.
+    """
 
     chat_template = "{{ some jinja }}"
 
     def apply_chat_template(self, messages, add_generation_prompt, return_tensors):
-        return ("chat", messages)
+        class _Result:
+            input_ids = ("chat", messages)
+
+        return _Result()
 
     def __call__(self, text, return_tensors):
         raise AssertionError("should not be called when a chat template exists")
@@ -80,6 +92,25 @@ class TestBuildModelInput:
         config = GenerationConfig()
         result = build_model_input(tokenizer, _item(), config)
         assert result == ("raw", _item().prompt)
+
+    def test_chat_template_result_is_unwrapped_to_input_ids_not_passed_as_is(self):
+        """Regression test: apply_chat_template(..., return_tensors="pt")
+        returns a BatchEncoding-like wrapper, not a raw tensor -- passing the
+        wrapper itself into model.generate() fails with AttributeError since
+        it has no `.shape`. Caught when the SFT-English pilot's first real
+        run produced 50/50 empty completions with finish_reason
+        "error: AttributeError: " -- see docs/phase2a-pilot.md."""
+        import torch
+
+        class _Tok(_InstructLikeTokenizer):
+            def apply_chat_template(self, messages, add_generation_prompt, return_tensors):
+                class _Result:
+                    input_ids = torch.tensor([[7, 8, 9]])
+
+                return _Result()
+
+        result = build_model_input(_Tok(), _item(), GenerationConfig())
+        assert torch.equal(result, torch.tensor([[7, 8, 9]]))
 
 
 class TestGeneratePerItemFailureIsolation:
@@ -139,7 +170,10 @@ class TestGenerationProtocolReflectsRealTemplateSupport:
 
         class _Tok(_InstructLikeTokenizer):
             def apply_chat_template(self, messages, add_generation_prompt, return_tensors):
-                return torch.tensor([[1, 2, 3]])
+                class _Result:
+                    input_ids = torch.tensor([[1, 2, 3]])
+
+                return _Result()
 
             def decode(self, ids, skip_special_tokens):
                 return "ok"
