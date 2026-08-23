@@ -1,0 +1,34 @@
+# Phase 2A pilot: infrastructure validation only, NOT a research result.
+# RLVR checkpoint, English only, PolyGuardPrompts only, 50 items.
+# Same sample as configs/experiments/pilot_base_en_polyguard.yaml /
+# pilot_sft_en_polyguard.yaml / pilot_dpo_en_polyguard.yaml: seed=42 over
+# this benchmark's deterministic_sample() yields the identical 50 item IDs /
+# 28 harmful + 22 unharmful balance -- the ONLY intentional difference from
+# the DPO config is `stages: [rlvr]`. Do not change the sample.
+#
+# Like SFT/DPO, RLVR has a real chat template (see
+# configs/models/olmo3_lineages.yaml) -- HFTransformersEvaluator will use
+# generation_protocol="chat_template" for every record here. This is the
+# final stage of the primary apples-to-apples trajectory (SFT -> DPO ->
+# RLVR); Base remains a descriptive reference only (docs/phase2a-pilot.md
+# section 0).
+#
+# Deliberately does NOT cover Korean, Belebele, XSTest, or the full
+# 1,699-item labeled set -- see the user's explicit Phase 2A pilot scope.
+
+name: pilot_rlvr_en_polyguard
+lineage: instruct
+stages: [rlvr]
+languages: [en]
+benchmarks: [polyguard_prompts]
+limit_per_benchmark: 50
+seed: 42
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 200
+  seed: 42
+  # system_prompt_override intentionally omitted (defaults to None): RLVR
+  # uses the checkpoint's default chat-template system prompt as-is, same
+  # policy as documented in docs/phase2a-pilot.md section 0 (must be held
+  # constant across the whole comparable trajectory, not overridden per stage).
