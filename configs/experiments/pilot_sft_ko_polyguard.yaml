@@ -1,0 +1,37 @@
+# Phase 2A pilot: infrastructure validation only, NOT a research result.
+# SFT checkpoint, Korean only, PolyGuardPrompts only, 50 items.
+# Same sample as configs/experiments/pilot_sft_en_polyguard.yaml: seed=42
+# over this benchmark's deterministic_sample() -- verified programmatically
+# (see docs/phase2a-pilot.md) that EN and KO PolyGuardPrompts share an
+# identical 1,725-item `id` set, and that deterministic_sample() sorts keys
+# before sampling, so load("en", limit=50, seed=42) and
+# load("ko", limit=50, seed=42) return the exact same 50 parallel_item_ids
+# in the same order, with identical expected_label per id and the identical
+# 28 harmful + 22 unharmful balance. This is the Korean counterpart of the
+# same 50 items used across the English SFT/DPO/RLVR pilots, NOT an
+# independently-sampled Korean set -- the ONLY intentional differences from
+# pilot_sft_en_polyguard.yaml are `name` and `languages: [ko]`. Do not
+# change the sample.
+#
+# Like the English SFT config, SFT has a real chat template -- expect
+# generation_protocol="chat_template" for every record here.
+#
+# Deliberately does NOT cover Korean DPO/RLVR, Belebele, XSTest, or the
+# full 1,699-item labeled set -- see the user's explicit Phase 2A pilot scope.
+
+name: pilot_sft_ko_polyguard
+lineage: instruct
+stages: [sft]
+languages: [ko]
+benchmarks: [polyguard_prompts]
+limit_per_benchmark: 50
+seed: 42
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 200
+  seed: 42
+  # system_prompt_override intentionally omitted (defaults to None): same
+  # policy as the English configs -- held constant across the whole
+  # comparable trajectory and across languages, not overridden per stage
+  # or language (docs/phase2a-pilot.md section 0).
