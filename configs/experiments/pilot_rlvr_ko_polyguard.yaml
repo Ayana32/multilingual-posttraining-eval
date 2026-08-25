@@ -1,0 +1,38 @@
+# Phase 2A pilot: infrastructure validation only, NOT a research result.
+# RLVR checkpoint, Korean only, PolyGuardPrompts only, 50 items.
+# Same sample as configs/experiments/pilot_dpo_ko_polyguard.yaml: seed=42
+# over this benchmark's deterministic_sample() -- verified programmatically
+# that load("ko", limit=50, seed=42) returns the exact same 50
+# parallel_item_ids, in the same order, as the Korean SFT and DPO pilots
+# and the English SFT/DPO/RLVR pilots' 50 items. This is the Korean
+# counterpart of the same 50 items used across the whole trajectory, NOT an
+# independently-sampled Korean set -- the ONLY intentional difference from
+# pilot_dpo_ko_polyguard.yaml is `stages: [rlvr]`. Do not change the sample.
+#
+# Deliberately does NOT set system_prompt_override -- the checkpoint's
+# default chat-template system prompt (no language instruction) is used
+# as-is, same as every other config in this trajectory. This is
+# intentional: language fidelity, refusal behaviour, degeneration, and
+# response quality under the released checkpoint's own default behaviour
+# are themselves part of what this pilot trajectory is evaluating, not
+# something to control away. Do not add a language instruction here.
+#
+# Deliberately does NOT cover Belebele, XSTest, or the full 1,699-item
+# labeled set -- see the user's explicit Phase 2A pilot scope. This
+# completes the 2x3 EN/KO x SFT/DPO/RLVR pilot matrix.
+
+name: pilot_rlvr_ko_polyguard
+lineage: instruct
+stages: [rlvr]
+languages: [ko]
+benchmarks: [polyguard_prompts]
+limit_per_benchmark: 50
+seed: 42
+
+generation:
+  temperature: 0.0
+  max_new_tokens: 200
+  seed: 42
+  # system_prompt_override intentionally omitted (defaults to None): same
+  # policy as every other config in this trajectory -- held constant across
+  # stages and languages, not overridden (docs/phase2a-pilot.md section 0).
