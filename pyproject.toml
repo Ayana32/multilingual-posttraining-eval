@@ -31,3 +31,6 @@ where = ["src"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = [
+    "network: test requires network access to download the real PolyGuardPrompts dataset from Hugging Face (excluded in CI via `pytest -m \"not network\"`)",
+]
