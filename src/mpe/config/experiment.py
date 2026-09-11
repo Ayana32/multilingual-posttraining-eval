@@ -26,6 +26,19 @@ class ExperimentConfig(BaseModel):
     benchmarks: list[str]
     limit_per_benchmark: int | None = None
     seed: int = 0
+    item_ids_manifest: str | None = None
+    """Path to a checked-in JSON manifest of frozen parallel_item_ids (see
+    mpe.datasets.manifest.load_id_manifest and configs/samples/) -- an
+    alternative to limit_per_benchmark + seed for pinning an exact,
+    auditable sample rather than re-deriving one via seeded sampling on
+    every run. When set, ExperimentRunner passes the manifest's ids to
+    any loader that supports an `item_ids` override (currently
+    PolyGuardPromptsLoader only); limit_per_benchmark and seed are then
+    ignored for that benchmark. Not validated here (no file I/O at
+    construction time, consistent with this class's existing policy of
+    deferring registry/dataset lookups to ExperimentRunner.run()) --
+    a missing or malformed manifest fails fast at run() time instead.
+    """
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
 
     @field_validator("stages")

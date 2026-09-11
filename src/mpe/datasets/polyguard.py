@@ -38,7 +38,11 @@ class PolyGuardPromptsLoader(DatasetLoader):
         return self.cache_path
 
     def load(
-        self, language: str, limit: int | None = None, seed: int = 0
+        self,
+        language: str,
+        limit: int | None = None,
+        seed: int = 0,
+        item_ids: list[str] | None = None,
     ) -> list[BenchmarkItem]:
         if language not in _LANGUAGE_NAME:
             raise ValueError(
@@ -48,11 +52,30 @@ class PolyGuardPromptsLoader(DatasetLoader):
         df = pd.read_parquet(self._ensure_cached())
         subset = df[df["language"] == _LANGUAGE_NAME[language]]
 
-        # `id` is confirmed shared across every language's rows for the same
-        # underlying (translated) prompt -- sampling on it here, independent
-        # of which language is being loaded, is what keeps EN/KO calls paired.
-        chosen_ids = deterministic_sample(subset["id"].tolist(), limit, seed)
-        subset = subset[subset["id"].isin(chosen_ids)].sort_values("id")
+        if item_ids is not None:
+            # Frozen-sample path (e.g. Phase 2B's checked-in manifest): use
+            # exactly these ids instead of re-deriving a sample via
+            # deterministic_sample(). limit/seed are ignored when item_ids
+            # is given -- the manifest is the authoritative sample. Matched
+            # as strings since parallel_item_id is a string everywhere else
+            # in this codebase; the raw `id` column's native dtype (int64)
+            # is irrelevant here.
+            available = set(subset["id"].astype(str))
+            missing = sorted(set(item_ids) - available)
+            if missing:
+                raise ValueError(
+                    f"item_ids requested but not present in {language} "
+                    f"{self.benchmark_name}: {missing[:10]}"
+                    f"{'...' if len(missing) > 10 else ''}"
+                )
+            chosen_ids_str = set(item_ids)
+            subset = subset[subset["id"].astype(str).isin(chosen_ids_str)].sort_values("id")
+        else:
+            # `id` is confirmed shared across every language's rows for the same
+            # underlying (translated) prompt -- sampling on it here, independent
+            # of which language is being loaded, is what keeps EN/KO calls paired.
+            chosen_ids = deterministic_sample(subset["id"].tolist(), limit, seed)
+            subset = subset[subset["id"].isin(chosen_ids)].sort_values("id")
 
         items = []
         for _, row in subset.iterrows():

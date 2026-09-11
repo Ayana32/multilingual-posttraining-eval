@@ -67,6 +67,44 @@ class TestPolyGuardPromptsLoader:
         assert ko_by_id["3"].expected_label is None
 
 
+class TestPolyGuardPromptsLoaderItemIds:
+    """The frozen-sample path (Phase 2B): explicit item_ids instead of
+    limit/seed-driven deterministic_sample()."""
+
+    def test_item_ids_returns_exactly_those_items(self, tiny_polyguard_parquet):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)
+        items = loader.load("en", item_ids=["0", "2"])
+        assert {i.parallel_item_id for i in items} == {"0", "2"}
+        assert len(items) == 2
+
+    def test_item_ids_ignores_limit_and_seed(self, tiny_polyguard_parquet):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)
+        # limit=1 would normally raise nothing (it's just a smaller sample),
+        # but must be irrelevant entirely once item_ids is given: all 2
+        # requested ids come back regardless of limit/seed.
+        items = loader.load("en", limit=1, seed=999, item_ids=["0", "1"])
+        assert {i.parallel_item_id for i in items} == {"0", "1"}
+
+    def test_missing_item_id_raises_clearly(self, tiny_polyguard_parquet):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)
+        with pytest.raises(ValueError, match="not present"):
+            loader.load("en", item_ids=["0", "does-not-exist"])
+
+    def test_item_ids_still_pair_correctly_across_en_and_ko(self, tiny_polyguard_parquet):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)
+        en_items = loader.load("en", item_ids=["0", "1"])
+        ko_items = loader.load("ko", item_ids=["0", "1"])
+        assert {i.parallel_item_id for i in en_items} == {i.parallel_item_id for i in ko_items} == {"0", "1"}
+
+    def test_item_ids_with_null_label_row_resolves_expected_label_none(
+        self, tiny_polyguard_parquet_with_null_labels
+    ):
+        loader = PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet_with_null_labels)
+        items = loader.load("en", item_ids=["2"])
+        assert len(items) == 1
+        assert items[0].expected_label is None
+
+
 class TestXSTestLoader:
     """Uses the real committed local snapshots -- no network, no fixtures."""
 

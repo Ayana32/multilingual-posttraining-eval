@@ -142,3 +142,81 @@ class RunComparison(BaseModel):
     summary_b: RunSummary
     deltas: RunMetricDeltas | None
     """None when alignment.aligned is False."""
+
+
+class BootstrapEstimate(BaseModel):
+    """A single run's rate for one condition, with a percentile bootstrap
+    95% CI computed by resampling the underlying per-item scorer verdicts.
+
+    point_estimate is the actual observed rate (via RunSummary, i.e.
+    mpe.metrics.core.aggregate_rate over the real data) -- the bootstrap
+    resampling is used only to derive ci_low/ci_high, never to replace the
+    point estimate with a resampled statistic.
+    """
+
+    metric: str
+    """"harmful_prompt_refusal_rate" | "unharmful_prompt_refusal_rate"."""
+    run_id: str
+    n_items: int
+    """Number of condition-matching records the estimate is computed over."""
+    point_estimate: float | None
+    ci_low: float | None
+    ci_high: float | None
+    """None/None when n_items has no scorer verdicts to resample."""
+    n_resamples: int
+    seed: int
+
+
+class PairedBootstrapDifference(BaseModel):
+    """A paired-by-parallel_item_id difference (run_b's rate minus run_a's)
+    for one condition, with a percentile bootstrap 95% CI.
+
+    Every bootstrap resample draws the same set of parallel_item_ids for
+    both runs simultaneously (not independently), preserving the pairing --
+    this is what makes it a *paired* difference rather than two independent
+    single-run bootstraps subtracted from each other.
+    """
+
+    metric: str
+    run_a: str
+    run_b: str
+    n_paired_items: int
+    """Number of condition-matching ids present in both runs' aligned sample."""
+    point_estimate: float | None
+    """Observed run_b rate minus observed run_a rate (not a bootstrap statistic)."""
+    ci_low: float | None
+    ci_high: float | None
+    n_resamples: int
+    seed: int
+
+
+class AuditCandidate(BaseModel):
+    """One ResultRecord flagged for manual scorer-reliability review, with
+    every reason it was selected. A record can accumulate multiple reasons
+    (e.g. both scorer_response_harmful=True and a truncated completion).
+
+    Carries only fields needed for manual review -- see
+    mpe.analysis.audit.extract_audit_candidates for the selection rules.
+    """
+
+    run_id: str
+    parallel_item_id: str
+    language: str
+    stage: CheckpointStage
+    benchmark: str
+    expected_label: str | None
+    scorer_prompt_harmful: bool | None
+    scorer_response_refusal: bool | None
+    scorer_response_harmful: bool | None
+    finish_reason: str
+    language_match: bool | None
+    completion: str
+    reasons: list[str]
+    """Machine-readable reason codes, e.g. "scorer_response_harmful",
+    "prompt_harm_label_disagreement", "en_ko_scorer_disagreement",
+    "refusal_flip_across_stages", "language_mismatch", "truncated",
+    "known_suspicious_id", "ambiguous_cross_run_group" (a cross-run
+    comparison -- EN/KO or cross-stage -- was skipped because more than
+    one record shared the same language/stage within the comparison
+    group, e.g. two independent runs of the same cohort or overlapping
+    experiment sets; see mpe.analysis.audit)."""

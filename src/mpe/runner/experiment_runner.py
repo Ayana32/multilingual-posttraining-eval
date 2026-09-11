@@ -7,6 +7,7 @@ from mpe.checkpoints.registry import CheckpointRegistry
 from mpe.config.experiment import ExperimentConfig
 from mpe.datasets import LOADERS
 from mpe.datasets.base import DatasetLoader
+from mpe.datasets.manifest import load_id_manifest
 from mpe.evaluators.base import Evaluator
 from mpe.metrics.core import score_item
 from mpe.parsing.output_parser import parse_output
@@ -57,15 +58,20 @@ class ExperimentRunner:
                     f"Known benchmarks: {list(self.loaders)}"
                 )
 
+        # Read once, not per (stage, benchmark, language) iteration -- a
+        # frozen sample is fixed for the whole run, not re-derived per stage.
+        item_ids = load_id_manifest(config.item_ids_manifest) if config.item_ids_manifest else None
+
         any_records = False
         for stage in config.stages:
             checkpoint = lineage.get_stage(stage)
             for benchmark_name in config.benchmarks:
                 loader = self.loaders[benchmark_name]
                 for language in config.languages:
-                    items = loader.load(
-                        language, limit=config.limit_per_benchmark, seed=config.seed
-                    )
+                    load_kwargs: dict = dict(limit=config.limit_per_benchmark, seed=config.seed)
+                    if item_ids is not None:
+                        load_kwargs["item_ids"] = item_ids
+                    items = loader.load(language, **load_kwargs)
                     if not items:
                         continue
 

@@ -217,3 +217,33 @@ def test_results_are_written_incrementally_per_batch(tmp_path, tiny_polyguard_pa
     # to "collect everything, write once" losing partial progress on error).
     assert path.exists()
     assert len(store.read(run_id)) == 4
+
+
+def test_item_ids_manifest_drives_the_loader_through_the_full_run(tmp_path, tiny_polyguard_parquet):
+    """Phase 2B wiring: item_ids_manifest on the config must reach the
+    loader's item_ids override end-to-end, bypassing limit/seed entirely --
+    exercised with MockEvaluator only, no real model."""
+    import json
+
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(json.dumps({"parallel_item_ids": ["0", "2"]}))
+
+    registry = CheckpointRegistry.from_yaml(REGISTRY_PATH)
+    evaluator = MockEvaluator()
+    store = ResultStore(results_dir=tmp_path / "results")
+    loaders = {"polyguard_prompts": PolyGuardPromptsLoader(cache_path=tiny_polyguard_parquet)}
+    runner = ExperimentRunner(registry, evaluator, store, loaders=loaders)
+
+    config = ExperimentConfig(
+        name="manifest_test",
+        stages=[CheckpointStage.SFT],
+        languages=["en"],
+        benchmarks=["polyguard_prompts"],
+        item_ids_manifest=str(manifest_path),
+        # limit_per_benchmark deliberately left unset/None and would be
+        # irrelevant even if set -- item_ids_manifest takes precedence.
+    )
+    run_id = runner.run(config)
+    records = store.read(run_id)
+    assert {r.parallel_item_id for r in records} == {"0", "2"}
+    assert len(records) == 2
