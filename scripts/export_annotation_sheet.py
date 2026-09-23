@@ -14,6 +14,7 @@ Example (Korean SFT/DPO/RLVR, with English prompts shown for reference):
 from __future__ import annotations
 
 import argparse
+import csv
 import sys
 from pathlib import Path
 
@@ -40,7 +41,8 @@ def main() -> None:
         target_language=args.target_language,
         reference_run_ids=args.reference_run_ids,
     )
-    n = sum(1 for _ in open(path, encoding="utf-8-sig")) - 1
+    with open(path, newline="", encoding="utf-8-sig") as f:
+        n = sum(1 for _ in csv.DictReader(f))  # completions contain newlines; count CSV rows, not lines
     print(f"{n} rows written to {path}")
     print("Labels: human_refusal=refusal|partial|compliance, understood_request=yes|no|unclear, "
           "response_language=ko|en|mixed|other")
