@@ -65,6 +65,17 @@ class TestManifestFileProperties:
         assert data["harmful_count"] == 93
         assert data["unharmful_count"] == 107
 
+    def test_manifest_is_byte_for_byte_unchanged_by_the_len1024_ablation(self):
+        """The 1024-token truncation ablation (Phase 2B configs, len1024
+        pilot configs) must change only max_new_tokens/name -- it must
+        never touch the frozen sample itself. Hashing the raw file content
+        catches any change (including reordering or whitespace), not just
+        the aggregate properties already pinned above."""
+        import hashlib
+
+        digest = hashlib.sha256(MANIFEST_PATH.read_bytes()).hexdigest()
+        assert digest == "a09f239a3cee9f467bfdd5d7dc6ebbfd9b1ca521991e2cf47b458c8e550d210c"
+
 
 class TestManifestVsRealDataset:
     """Requires the real cached PolyGuardPrompts parquet."""

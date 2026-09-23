@@ -31,7 +31,7 @@ item_ids_manifest: configs/samples/phase2b_polyguard_en_ko_200.json
 
 generation:
   temperature: 0.0
-  max_new_tokens: 200
+  max_new_tokens: 1024
   seed: 42
   # system_prompt_override intentionally omitted (defaults to None): same
   # policy as every Phase 2A config -- held constant across stages and
