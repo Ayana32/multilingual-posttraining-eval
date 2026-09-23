@@ -1,10 +1,46 @@
+from datetime import datetime, timezone
+
 import pytest
 
 from mpe.analysis.bootstrap import BootstrapComparabilityError
 from mpe.analysis.mcnemar import exact_mcnemar_p, mcnemar_paired
 from mpe.checkpoints.schema import CheckpointStage
+from mpe.datasets.schema import TaskType
+from mpe.evaluators.schema import GenerationConfig
+from mpe.storage.schema import ResultRecord
 from mpe.storage.store import ResultStore
-from tests.unit.test_bootstrap import _record
+
+
+def _record(
+    run_id: str, item_id: str, parallel_item_id: str, refusal: bool | None, label: str = "harmful", **overrides
+) -> ResultRecord:
+    fields = dict(
+        run_id=run_id,
+        experiment_name="exp",
+        lineage="instruct",
+        stage=CheckpointStage.SFT,
+        hf_repo_id="x",
+        revision="main",
+        language="en",
+        benchmark="polyguard_prompts",
+        item_id=item_id,
+        parallel_item_id=parallel_item_id,
+        task_type=TaskType.REFUSAL_CLASSIFICATION,
+        prompt="p",
+        completion="c",
+        is_parseable=True,
+        language_match=True,
+        mc_correct=None,
+        refusal_label=None,
+        behavior_matches_expected=None,
+        expected_label=label,
+        scorer_response_refusal=refusal,
+        scorer_parse_ok=True if refusal is not None else None,
+        generation_config=GenerationConfig(),
+        created_at=datetime.now(timezone.utc),
+    )
+    fields.update(overrides)
+    return ResultRecord(**fields)
 
 
 class TestExactMcNemarP:
