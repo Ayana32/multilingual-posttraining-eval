@@ -35,20 +35,83 @@ def _condition_matches(expected_label: str | None, condition: Condition) -> bool
     return expected_refusal_for_label(expected_label) is _CONDITION_VALUE[condition]
 
 
+def _validate_length_ablation_pair(
+    records_a: list[ResultRecord], records_b: list[ResultRecord], run_a: str, run_b: str
+) -> None:
+    """For allow_length_ablation=True only: a same-stage, same-language
+    pair is allowed IF checkpoint, temperature, seed, system_prompt_
+    override, and scorer are all identical between the two runs -- i.e.
+    the only thing that may differ is generation_config.max_new_tokens
+    (it may also be equal, e.g. a self-paired smoke check)."""
+    repo_a = {r.hf_repo_id for r in records_a}
+    repo_b = {r.hf_repo_id for r in records_b}
+    rev_a = {r.revision for r in records_a}
+    rev_b = {r.revision for r in records_b}
+    if len(repo_a) != 1 or len(repo_b) != 1 or repo_a != repo_b:
+        raise BootstrapComparabilityError(
+            f"Cannot compute a length-ablation comparison between '{run_a}' and '{run_b}': "
+            f"checkpoint differs (run_a: {repo_a}, run_b: {repo_b})."
+        )
+    if len(rev_a) != 1 or len(rev_b) != 1 or rev_a != rev_b:
+        raise BootstrapComparabilityError(
+            f"Cannot compute a length-ablation comparison between '{run_a}' and '{run_b}': "
+            f"checkpoint revision differs (run_a: {rev_a}, run_b: {rev_b})."
+        )
+
+    gen_a = {
+        (r.generation_config.temperature, r.generation_config.seed, r.generation_config.system_prompt_override)
+        for r in records_a
+    }
+    gen_b = {
+        (r.generation_config.temperature, r.generation_config.seed, r.generation_config.system_prompt_override)
+        for r in records_b
+    }
+    if len(gen_a) != 1 or len(gen_b) != 1:
+        raise BootstrapComparabilityError(
+            f"Cannot compute a length-ablation comparison between '{run_a}' and '{run_b}': each run "
+            "must use consistent temperature/seed/system_prompt_override across all its records."
+        )
+    if gen_a != gen_b:
+        raise BootstrapComparabilityError(
+            f"Cannot compute a length-ablation comparison between '{run_a}' and '{run_b}': "
+            f"temperature/seed/system_prompt_override differ (run_a: {gen_a}, run_b: {gen_b}) -- "
+            "only max_new_tokens may differ in a length ablation."
+        )
+
+    scorer_a = {r.scorer_name for r in records_a}
+    scorer_b = {r.scorer_name for r in records_b}
+    if len(scorer_a) != 1 or len(scorer_b) != 1 or scorer_a != scorer_b or None in scorer_a:
+        raise BootstrapComparabilityError(
+            f"Cannot compute a length-ablation comparison between '{run_a}' and '{run_b}': "
+            f"scorer differs or is missing (run_a: {scorer_a}, run_b: {scorer_b})."
+        )
+
+
 def _validate_paired_comparability(
     comparison: RunComparison,
     records_a: list[ResultRecord],
     records_b: list[ResultRecord],
     run_a: str,
     run_b: str,
+    *,
+    allow_length_ablation: bool = False,
 ) -> None:
-    """Allows exactly the two intended Phase 2B paired-comparison families:
+    """Allows exactly the two intended Phase 2B paired-comparison families,
+    plus a third opt-in family for the length ablation:
 
     A. Cross-language: same lineage, same benchmark, same single stage,
        different single languages (e.g. SFT-EN vs SFT-KO).
     B. Cross-stage: same lineage, same benchmark, same single language,
        both stages within COMPARABLE_TRAJECTORY_STAGES (stages may
        differ, e.g. SFT-EN vs DPO-EN).
+    C. Length ablation (allow_length_ablation=True only): same lineage,
+       same benchmark, same single stage, same single language, same
+       checkpoint/temperature/seed/system_prompt_override/scorer -- only
+       generation_config.max_new_tokens may differ (see
+       _validate_length_ablation_pair). Off by default: without the flag,
+       a same-stage-same-language pair is still rejected exactly as
+       before, so every existing Phase 2B comparability test is
+       unaffected.
 
     Rejects: mixing both a language difference and a stage difference in
     the same comparison (e.g. SFT-EN vs RLVR-KO), different lineage,
@@ -57,7 +120,7 @@ def _validate_paired_comparability(
 
     Reuses compare_runs()'s already-computed same_lineage/same_benchmark/
     stages_comparable/alignment -- only the language/stage *family* check
-    (which of the two allowed shapes this is) is new logic.
+    (which of the two-or-three allowed shapes this is) is new logic.
     """
     if not comparison.alignment.aligned:
         raise BootstrapComparabilityError(
@@ -100,10 +163,14 @@ def _validate_paired_comparability(
     same_language = languages_a == languages_b
 
     if same_stage and same_language:
+        if allow_length_ablation:
+            _validate_length_ablation_pair(records_a, records_b, run_a, run_b)
+            return
         raise BootstrapComparabilityError(
             f"'{run_a}' and '{run_b}' are the same stage and language -- nothing to compare. A paired "
             "bootstrap needs either a language difference (same stage) or a stage difference (same "
-            "language), not neither."
+            "language), not neither (pass allow_length_ablation=True for a same-stage-same-language "
+            "max_new_tokens comparison)."
         )
     if not same_stage and not same_language:
         raise BootstrapComparabilityError(
@@ -114,7 +181,7 @@ def _validate_paired_comparability(
         )
 
 
-def _percentile(sorted_values: list[float], pct: float) -> float:
+def percentile(sorted_values: list[float], pct: float) -> float:
     """Linear-interpolation percentile (matches numpy's default 'linear'
     method) -- implemented in pure Python so this utility introduces no new
     dependency beyond what the project already has."""
@@ -144,7 +211,7 @@ def _bootstrap_ci_single(
     if not rates:
         return None, None
     rates.sort()
-    return _percentile(rates, 2.5), _percentile(rates, 97.5)
+    return percentile(rates, 2.5), percentile(rates, 97.5)
 
 
 def bootstrap_run_rate(
@@ -192,6 +259,7 @@ def bootstrap_paired_difference(
     condition: Condition,
     n_resamples: int = 10_000,
     seed: int = 0,
+    allow_length_ablation: bool = False,
 ) -> PairedBootstrapDifference:
     """Paired-by-parallel_item_id difference (run_b's rate minus run_a's)
     + 95% percentile bootstrap CI, for one condition.
@@ -204,15 +272,24 @@ def bootstrap_paired_difference(
     difference (e.g. SFT-EN vs RLVR-KO) is rejected, as is a mismatched
     lineage/benchmark, Base involvement, or a misaligned/duplicate sample.
 
+    allow_length_ablation=True additionally permits a same-stage,
+    same-language pair differing only in generation_config.max_new_tokens
+    (same checkpoint/temperature/seed/system_prompt_override/scorer) --
+    see mpe.analysis.length_ablation, which is the only intended caller of
+    this flag. Default False, so every other caller's behavior (and every
+    existing comparability test) is unaffected.
+
     Reuses compare_runs() for alignment/lineage/benchmark/stage-
     comparability -- no alignment logic is duplicated here, only the
-    language/stage *family* check (which of the two allowed comparison
+    language/stage *family* check (which of the allowed comparison
     shapes this is) is new.
     """
     comparison = compare_runs(store, run_a, run_b)  # validates both run_ids exist
     records_a = list(store.read(run_a))
     records_b = list(store.read(run_b))
-    _validate_paired_comparability(comparison, records_a, records_b, run_a, run_b)
+    _validate_paired_comparability(
+        comparison, records_a, records_b, run_a, run_b, allow_length_ablation=allow_length_ablation
+    )
 
     records_a = {r.parallel_item_id: r for r in records_a}
     records_b = {r.parallel_item_id: r for r in records_b}
@@ -249,7 +326,7 @@ def bootstrap_paired_difference(
         ci_low, ci_high = None, None
     else:
         deltas.sort()
-        ci_low, ci_high = _percentile(deltas, 2.5), _percentile(deltas, 97.5)
+        ci_low, ci_high = percentile(deltas, 2.5), percentile(deltas, 97.5)
 
     return PairedBootstrapDifference(
         metric=f"{condition}_prompt_refusal_rate",

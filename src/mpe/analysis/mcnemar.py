@@ -71,11 +71,19 @@ def mcnemar_paired(
     run_b: str,
     *,
     condition: Condition = "harmful",
+    allow_length_ablation: bool = False,
 ) -> McNemarResult:
+    """allow_length_ablation=True permits a same-stage, same-language pair
+    differing only in generation_config.max_new_tokens -- see
+    mpe.analysis.bootstrap._validate_paired_comparability and
+    mpe.analysis.length_ablation, the only intended caller of this flag.
+    Default False, matching bootstrap_paired_difference."""
     comparison = compare_runs(store, run_a, run_b)  # validates both run_ids exist
     records_a_list = list(store.read(run_a))
     records_b_list = list(store.read(run_b))
-    _validate_paired_comparability(comparison, records_a_list, records_b_list, run_a, run_b)
+    _validate_paired_comparability(
+        comparison, records_a_list, records_b_list, run_a, run_b, allow_length_ablation=allow_length_ablation
+    )
 
     records_a = {r.parallel_item_id: r for r in records_a_list}
     records_b = {r.parallel_item_id: r for r in records_b_list}
