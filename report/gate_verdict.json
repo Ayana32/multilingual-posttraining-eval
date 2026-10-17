@@ -1,0 +1,117 @@
+{
+  "g0_all_passed": true,
+  "g1a_all_passed": false,
+  "overall_go": false,
+  "g0": [
+    {
+      "stage": "sft",
+      "language": "en",
+      "run_200": "pilot_sft_en_polyguard_797e5b18",
+      "run_1024": "pilot_sft_en_polyguard_len1024_e205bc98",
+      "passed": true,
+      "reason": null
+    },
+    {
+      "stage": "sft",
+      "language": "ko",
+      "run_200": "pilot_sft_ko_polyguard_b200d0c5",
+      "run_1024": "pilot_sft_ko_polyguard_len1024_4baef0dc",
+      "passed": true,
+      "reason": null
+    },
+    {
+      "stage": "dpo",
+      "language": "en",
+      "run_200": "pilot_dpo_en_polyguard_e73913f7",
+      "run_1024": "pilot_dpo_en_polyguard_len1024_4e75c288",
+      "passed": true,
+      "reason": null
+    },
+    {
+      "stage": "dpo",
+      "language": "ko",
+      "run_200": "pilot_dpo_ko_polyguard_071840f2",
+      "run_1024": "pilot_dpo_ko_polyguard_len1024_d90b65e9",
+      "passed": true,
+      "reason": null
+    },
+    {
+      "stage": "rlvr",
+      "language": "en",
+      "run_200": "pilot_rlvr_en_polyguard_152ef3e1",
+      "run_1024": "pilot_rlvr_en_polyguard_len1024_45b61797",
+      "passed": true,
+      "reason": null
+    },
+    {
+      "stage": "rlvr",
+      "language": "ko",
+      "run_200": "pilot_rlvr_ko_polyguard_74628a89",
+      "run_1024": "pilot_rlvr_ko_polyguard_len1024_8ee5a4bc",
+      "passed": true,
+      "reason": null
+    }
+  ],
+  "g1a": [
+    {
+      "stage": "sft",
+      "token_length": 1024,
+      "en": {
+        "truncated": 0,
+        "total": 23,
+        "rate": 0.0
+      },
+      "ko": {
+        "truncated": 3,
+        "total": 9,
+        "rate": 0.3333333333333333
+      },
+      "abs_diff_pp": 33.33333333333333,
+      "threshold_pp": 10.0,
+      "max_truncated_per_language": 1,
+      "gated": true,
+      "passed": false,
+      "zero_refusal_denominator": false
+    },
+    {
+      "stage": "dpo",
+      "token_length": 1024,
+      "en": {
+        "truncated": 1,
+        "total": 21,
+        "rate": 0.047619047619047616
+      },
+      "ko": {
+        "truncated": 0,
+        "total": 3,
+        "rate": 0.0
+      },
+      "abs_diff_pp": 4.761904761904762,
+      "threshold_pp": 10.0,
+      "max_truncated_per_language": 1,
+      "gated": true,
+      "passed": true,
+      "zero_refusal_denominator": false
+    },
+    {
+      "stage": "rlvr",
+      "token_length": 1024,
+      "en": {
+        "truncated": 0,
+        "total": 20,
+        "rate": 0.0
+      },
+      "ko": {
+        "truncated": 0,
+        "total": 5,
+        "rate": 0.0
+      },
+      "abs_diff_pp": 0.0,
+      "threshold_pp": 10.0,
+      "max_truncated_per_language": 1,
+      "gated": true,
+      "passed": true,
+      "zero_refusal_denominator": false
+    }
+  ]
+}
