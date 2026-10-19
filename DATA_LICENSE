@@ -1,0 +1,30 @@
+Data License: CC BY 4.0
+
+Copyright (c) 2026 Misun Kim
+
+The human annotation labels and derived data under data/ and report/ in
+this repository (including but not limited to data/phase2b/*/records_redacted.jsonl,
+report/human_labels_en.csv, report/human_labels_ko.csv,
+report/en_scorer_validation_key.csv, report/en_scorer_validation_population.csv,
+report/ko_scorer_validation_key.csv, and report/scorer_validation_summary.txt)
+are licensed under the Creative Commons Attribution 4.0 International
+License (CC BY 4.0).
+
+To view a copy of this license, visit
+https://creativecommons.org/licenses/by/4.0/
+
+This license covers only the human labels and derived statistics
+produced by this project. It does not cover:
+
+- PolyGuardPrompts (ToxicityPrompts/PolyGuardPrompts on Hugging Face),
+  which remains under its own license (see its dataset card). This
+  repository never reproduces PolyGuardPrompts' prompt text; it is
+  referenced only by item ID.
+- OLMo 3 model outputs (the completions these labels and statistics are
+  derived from), which remain under the terms of the respective OLMo 3
+  model licenses and are not redistributed by this repository in raw
+  form; see the Data Availability section of docs/phase2b-results.md and
+  the README for how to request them.
+
+The code in this repository (everything under src/, scripts/, tests/,
+and configs/) is licensed separately under the MIT License; see LICENSE.

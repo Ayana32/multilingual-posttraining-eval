@@ -21,7 +21,9 @@ Gate results, from `report/gate_verdict.json` and `report/gate_report.json`: G0 
 
 Results currently live in `~/results/`, outside the repository's own `results/` directory. They have not yet been moved into the repo's results tree.
 
-**Data availability.** This repository is public. Raw model completions (the `prompt`/`completion` columns of the EN and KO annotation sheets, and the `completion_200`/`completion_1024` columns of `report/review.csv`) are kept out of the committed tree and are available on request. The committed files contain item IDs, human and scorer labels, aggregate statistics, and notes, which is enough to reproduce every number in this document without publishing the underlying harmful-prompt completions themselves.
+**Data availability.** This repository is public. Prompts are referenced only by their PolyGuardPrompts item ID, never reproduced as text. PolyGuardPrompts' own Hugging Face dataset card (`ToxicityPrompts/PolyGuardPrompts`) lists its license as CC BY 4.0, which generally permits redistributing the prompt text with attribution; this repository does not redistribute it anyway, since the card also states the data was built partly from WildGuardMix, whose own redistribution terms are not stated on the PolyGuardPrompts card. Get the prompt text directly from Hugging Face under its own license.
+
+Responses to harmful prompts can contain operational harmful content (for example, synthesis steps or exploit code), so raw completions are not published regardless of licensing. They are available on request for research use. What is public: `data/phase2b/<run_id>/records_redacted.jsonl` (item IDs, every scorer verdict, generation config, and a `completion_sha256` hash plus length and repetition metrics for each completion, never the completion text) and `report/human_labels_{en,ko}.csv` (every human label and note from the blind validation described in section 5). Together they reproduce every number in this document; see `docs/reproduce-phase2b.md`.
 
 ## 3. Scorer-based results
 

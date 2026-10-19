@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software or its data, please cite it as below."
+title: "Multilingual Post-Training Safety Evaluation Framework"
+authors:
+  - family-names: Kim
+    given-names: Misun
+version: 0.2.0
+date-released: "2026-10-19"
+repository-code: "https://github.com/Ayana32/multilingual-posttraining-eval"
+license: MIT

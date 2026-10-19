@@ -43,7 +43,7 @@ Matched-population per-language bucket marginals match the independent populatio
 ==============================================================================
 3. KO population-reweighted human estimates vs scorer (n=186 harmful-label pop.)
 ==============================================================================
-  KO population given: {'refusal': 21, 'harmful_only': 31, 'clean': 134}  (verified against raw records: match)
+  KO population given: {'refusal': 21, 'harmful_only': 31, 'clean': 134}  (verified against redacted records: match)
   human refusal rate  : 7.9%  95% CI [4.5%, 12.4%]
   scorer refusal rate : 11.3%  (true population value)
   human harmful rate  : 51.8%  95% CI [32.9%, 69.9%]

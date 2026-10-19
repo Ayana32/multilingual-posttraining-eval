@@ -59,6 +59,7 @@ Every component behind this pipeline is swappable independently: a `MockEvaluato
 configs/benchmarks/registry.yaml    Benchmark registry
 configs/experiments/                Per-run experiment configs (this pilot's SFT/DPO/RLVR x EN/KO configs)
 configs/models/olmo3_lineages.yaml  Verified OLMo 3 checkpoint lineage/stage registry
+data/phase2b/                       Redacted Phase 2B records (no prompt/completion text, see Data Availability)
 docs/annotation-guide.md            Blind annotation protocol: comprehension vs. compliance, non-EN
 docs/gpu-day-runbook.md             Step-by-step runbook for a real-inference GPU session
 docs/phase0-findings.md             Research design and dataset/checkpoint verification
@@ -67,18 +68,23 @@ docs/phase1-review.md               Phase 1 review
 docs/phase2a-length-ablation.md     200-vs-1024-token length ablation (truncation gate)
 docs/phase2a-pilot.md               Full pilot methodology, evidence, and results
 docs/phase2b-results.md             Phase 2B (200-item) results, uncertainty analysis, limitations
+docs/reproduce-phase2b.md           CPU-only and GPU reproduction instructions for Phase 2B
 docs/sft-ko-failure-analysis.md     Why SFT-KO was excluded from Phase 2B (G1a gate failure)
-report/                             Human-annotation sheets, keys, and analysis summaries (raw
+report/                             Human-annotation labels, keys, and analysis summaries (raw
                                      completions excluded from the public repo, see Data Availability)
 scripts/analyze_phase2b.py          Phase 2B scorer-based results (refusal/compliance/truncation)
 scripts/analyze_phase2b_followup.py Phase 2B scorer-vs-expected-label agreement, paired McNemar
 scripts/analyze_scorer_validation.py Human-vs-scorer agreement, bootstrap and Jeffreys uncertainty
+scripts/build_redacted_records.py   Builds data/phase2b/ from raw results (the only script that
+                                     touches raw completions)
 scripts/compare_length_ablation.py  200-vs-1024-token gate computation (G0-G3)
 scripts/export_annotation_sheet.py  Blind annotation sheet export
 scripts/extract_audit_candidates.py Flags records for manual audit
 scripts/inspect_scorer_outputs.py   Manual scorer-output inspection helper
 scripts/make_length_pairs.py        Auto-discovers 200-vs-1024-token run pairs for the gate
 scripts/mcnemar_paired.py           Paired exact McNemar CLI
+scripts/prepare_annotation_labels.py One-off: builds report/human_labels_{en,ko}.csv from a
+                                     completed annotation sheet
 scripts/run_experiment.py           CLI entry point
 scripts/summarize_annotations.py    Annotation-sheet summary statistics
 src/mpe/analysis/                   Deterministic run summary/comparison utilities
@@ -91,7 +97,8 @@ src/mpe/parsing/                    Raw-completion output parsing
 src/mpe/runner/                     ExperimentRunner orchestration
 src/mpe/scorers/                    Authoritative Tier-2 scorer (PolyGuard)
 src/mpe/storage/                    ResultRecord schema + JSONL ResultStore
-tests/                              Unit + integration tests
+tests/                              Unit + integration tests, including the CPU-only Phase 2B
+                                     reproduction check (tests/test_phase2b_reproduction.py)
 ```
 
 ## Implemented Components
@@ -203,7 +210,7 @@ python scripts/run_experiment.py \
 ## Testing
 
 ```bash
-pytest              # full suite -- 270 tests, requires torch (see Development Setup)
+pytest              # full suite -- 271 tests, requires torch (see Development Setup)
 pytest -m "not network"   # CI-equivalent: excludes the 8 tests that need the real
                            # cached PolyGuardPrompts dataset; deterministic and network-free
 ```
@@ -212,7 +219,7 @@ The `network` marker is reserved for tests that pin properties of the real, full
 
 ## Continuous Integration
 
-`.github/workflows/ci.yml` runs on every push and pull request: Ubuntu, Python 3.12, `pip install -e ".[dev]" torch`, then `pytest -m "not network"`. No GPU, no Hugging Face downloads, and no real-model inference happen in CI. The full local suite is 270 tests; CI runs the network-free subset of that same suite and currently passes on the latest commit.
+`.github/workflows/ci.yml` runs on every push and pull request: Ubuntu, Python 3.12, `pip install -e ".[dev]" torch`, then `pytest -m "not network"`. No GPU, no Hugging Face downloads, and no real-model inference happen in CI. The full local suite is 271 tests; CI runs the network-free subset of that same suite and currently passes on the latest commit.
 
 ## Cloud GPU Execution
 
@@ -251,4 +258,10 @@ What remains open: whether the same gap appears in other model families and othe
 
 ## Data Availability
 
-This repository is public. Raw model completions are excluded from the committed tree and are available on request. The committed files under `report/` contain item IDs, human and scorer labels, and aggregate statistics, which is enough to reproduce every number in `docs/phase2b-results.md` without publishing the underlying harmful-prompt completions themselves.
+This repository is public. Prompts are referenced only by their PolyGuardPrompts item ID, never reproduced as text, in every committed file. PolyGuardPrompts' own dataset card on Hugging Face (`ToxicityPrompts/PolyGuardPrompts`) lists its license as CC BY 4.0, which generally permits redistributing the prompt text with attribution; this repository does not redistribute it anyway, since the card also states the data was built partly from WildGuardMix, whose own redistribution terms are not stated on the PolyGuardPrompts card, so get the prompt text directly from Hugging Face under its own license rather than from this repository.
+
+Responses to harmful prompts can contain operational harmful content (for example, synthesis steps or exploit code), so raw completions are not published regardless of licensing. They are available on request for research use. What is public: `data/phase2b/<run_id>/records_redacted.jsonl` (item IDs, every scorer verdict, generation config, and a `completion_sha256` hash plus length and repetition metrics for each completion, but never the completion text itself) and `report/human_labels_{en,ko}.csv` (every human label and note from the blind validation). Together they reproduce every number in `docs/phase2b-results.md`; see `docs/reproduce-phase2b.md`.
+
+## License
+
+Code in this repository (`src/`, `scripts/`, `tests/`, `configs/`) is MIT-licensed; see [LICENSE](LICENSE). The human annotation labels and derived statistics under `data/` and `report/` are licensed CC BY 4.0; see [DATA_LICENSE](DATA_LICENSE). PolyGuardPrompts and OLMo 3 model outputs remain under their own respective terms; this repository does not relicense either.

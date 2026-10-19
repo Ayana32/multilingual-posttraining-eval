@@ -1,16 +1,20 @@
 #!/usr/bin/env python3
-"""Analyze the completed EN and KO scorer-validation annotation sheets:
-agreement/kappa/PABAK, population-reweighted human rate estimates with
-two bootstrap methods (independent stratified, paired two-phase),
+"""Analyze the EN and KO scorer-validation human labels against the
+redacted Phase 2B records: agreement/kappa/PABAK, population-reweighted
+human rate estimates with three uncertainty methods (independent
+stratified bootstrap, paired two-phase bootstrap, Jeffreys-prior),
 EN-KO comparison, exact McNemar, and paired-item cross-tabs.
 
-Read-only on results/; writes only report/en_scorer_validation_completed.csv
-(cleaned copy of the user's completed EN sheet, title row stripped) and
-report/scorer_validation_summary.txt (this script's full output). Does
-not modify either blind sheet. No commits.
+Reads report/human_labels_en.csv, report/human_labels_ko.csv (human
+labels only, no prompt/completion; see scripts/prepare_annotation_labels.py)
+and report/en_scorer_validation_population.csv, plus the redacted Phase 2B
+records under --data-dir for scorer verdicts and population rates. Writes
+only the summary text file at --output. No raw completions anywhere in
+this script.
 """
 from __future__ import annotations
 
+import argparse
 import contextlib
 import csv
 import json
@@ -20,55 +24,37 @@ import sys
 from collections import Counter
 from pathlib import Path
 
-REPORT_DIR = Path("~/multilingual-posttraining-eval/report").expanduser()
-
-EN_RESULT_FILES = {
-    "dpo": "~/results/phase2b_dpo_en_polyguard_17c33a34/records.jsonl",
-    "rlvr": "~/results/phase2b_rlvr_en_polyguard_151e7314/records.jsonl",
-}
-KO_RESULT_FILES = {
-    "dpo": "~/results/phase2b_dpo_ko_polyguard_7b95ba0c/records.jsonl",
-    "rlvr": "~/results/phase2b_rlvr_ko_polyguard_324c0cc3/records.jsonl",
+RUN_IDS = {
+    ("dpo", "en"): "phase2b_dpo_en_polyguard_17c33a34",
+    ("dpo", "ko"): "phase2b_dpo_ko_polyguard_7b95ba0c",
+    ("rlvr", "en"): "phase2b_rlvr_en_polyguard_151e7314",
+    ("rlvr", "ko"): "phase2b_rlvr_ko_polyguard_324c0cc3",
 }
 
 N_RESAMPLES = 20_000
+N_JEFFREYS = 40_000
 
 
 # ---------------------------------------------------------------------------
 # Loading / joining
 # ---------------------------------------------------------------------------
 
-def clean_en_completed_sheet() -> Path:
-    src = Path("~/Downloads/en_scorer_validation_completed.csv").expanduser()
-    dst = REPORT_DIR / "en_scorer_validation_completed.csv"
-    text = src.read_text(encoding="utf-8-sig")
-    first_line, rest = text.split("\n", 1)
-    assert first_line.strip() == "en_scorer_validation", f"unexpected title row: {first_line!r}"
-    dst.write_text(rest, encoding="utf-8-sig", newline="")
-    rows = list(csv.DictReader(open(dst, encoding="utf-8-sig")))
-    expected_cols = ["annotation_id", "prompt", "completion", "finish_reason",
-                      "human_refusal", "human_harmful", "notes"]
-    assert len(rows) == 30, f"expected 30 rows, got {len(rows)}"
-    assert list(rows[0].keys()) == expected_cols, rows[0].keys()
-    return dst
-
-
 def load_csv(path: Path) -> list[dict]:
     return list(csv.DictReader(open(path, encoding="utf-8-sig")))
 
 
-def yn(v: str) -> bool:
-    return v.strip().lower() == "yes"
+def tf(v) -> bool:
+    if isinstance(v, bool):
+        return v
+    return str(v).strip().lower() == "true"
 
 
-def tf(v: str) -> bool:
-    return v.strip().lower() == "true"
-
-
-def load_harmful_population(files: dict[str, str]) -> dict[str, list[dict]]:
+def load_harmful_population(data_dir: Path, lang: str) -> dict[str, list[dict]]:
     out = {}
-    for stage, path_str in files.items():
-        path = Path(path_str).expanduser()
+    for (stage, record_lang), run_id in RUN_IDS.items():
+        if record_lang != lang:
+            continue
+        path = data_dir / run_id / "records_redacted.jsonl"
         records = [json.loads(line) for line in open(path, encoding="utf-8") if line.strip()]
         out[stage] = [r for r in records if r["expected_label"] == "harmful"]
     return out
@@ -82,28 +68,25 @@ def bucket_of(r: dict) -> str:
     return "clean"
 
 
-def join_sheet(completed_rows: list[dict], key_rows: list[dict], item_id_to_pid: dict[str, str] | None = None) -> list[dict]:
-    key_by_id = {r["annotation_id"]: r for r in key_rows}
-    assert {r["annotation_id"] for r in completed_rows} == set(key_by_id), "annotation_id mismatch"
-    item_id_to_pid = item_id_to_pid or {}
+def join_labels(human_label_rows: list[dict], population_by_stage_item_id: dict[tuple[str, str], dict]) -> list[dict]:
+    """Joins human_labels_{en,ko}.csv rows against the redacted population
+    records (keyed by (stage, item_id), since the same item_id string
+    recurs across stages -- item_id encodes benchmark/language/parallel_item_id
+    only, not stage) to attach each item's scorer verdicts and bucket."""
     joined = []
-    for c in completed_rows:
-        k = key_by_id[c["annotation_id"]]
-        pid = k.get("parallel_item_id") or item_id_to_pid.get(k["item_id"])
+    for row in human_label_rows:
+        record = population_by_stage_item_id[(row["stage"], row["item_id"])]
         joined.append({
-            "annotation_id": c["annotation_id"],
-            "item_id": k["item_id"],
-            "parallel_item_id": pid,
-            "stage": k["stage"],
-            "bucket": k.get("bucket") or bucket_of({
-                "scorer_response_refusal": tf(k["scorer_response_refusal"]),
-                "scorer_response_harmful": tf(k["scorer_response_harmful"]),
-            }),
-            "human_refusal": yn(c["human_refusal"]),
-            "human_harmful": yn(c["human_harmful"]),
-            "scorer_refusal": tf(k["scorer_response_refusal"]),
-            "scorer_harmful": tf(k["scorer_response_harmful"]),
-            "notes": c["notes"],
+            "annotation_id": row["annotation_id"],
+            "item_id": row["item_id"],
+            "parallel_item_id": row["parallel_item_id"],
+            "stage": row["stage"],
+            "bucket": bucket_of(record),
+            "human_refusal": tf(row["human_refusal"]),
+            "human_harmful": tf(row["human_harmful"]),
+            "scorer_refusal": record["scorer_response_refusal"],
+            "scorer_harmful": record["scorer_response_harmful"],
+            "notes": row["notes"],
         })
     return joined
 
@@ -312,12 +295,9 @@ class Tee:
             s.flush()
 
 
-def _run():
-    clean_en_completed_sheet()
-
-    en_completed = load_csv(REPORT_DIR / "en_scorer_validation_completed.csv")
-    en_key = load_csv(REPORT_DIR / "en_scorer_validation_key.csv")
-    en_population_rows = load_csv(REPORT_DIR / "en_scorer_validation_population.csv")
+def _run(data_dir: Path, report_dir: Path):
+    en_labels = load_csv(report_dir / "human_labels_en.csv")
+    en_population_rows = load_csv(report_dir / "en_scorer_validation_population.csv")
     en_population = {"dpo": {}, "rlvr": {}}
     for row in en_population_rows:
         en_population[row["stage"]][row["bucket"]] = int(row["population_count"])
@@ -325,20 +305,20 @@ def _run():
         b: en_population["dpo"][b] + en_population["rlvr"][b] for b in ("refusal", "harmful_only", "clean")
     }
 
-    ko_completed = load_csv(REPORT_DIR / "ko_scorer_validation_completed.csv")
-    ko_key = load_csv(REPORT_DIR / "ko_scorer_validation_key.csv")
+    ko_labels = load_csv(report_dir / "human_labels_ko.csv")
     ko_population_pooled = {"refusal": 21, "harmful_only": 31, "clean": 134}
 
-    ko_full = load_harmful_population(KO_RESULT_FILES)
-    en_full = load_harmful_population(EN_RESULT_FILES)
+    ko_full = load_harmful_population(data_dir, "ko")
+    en_full = load_harmful_population(data_dir, "en")
     en_full_pooled = [r for recs in en_full.values() for r in recs]
     ko_full_pooled = [r for recs in ko_full.values() for r in recs]
-    ko_item_to_pid = {r["item_id"]: r["parallel_item_id"] for r in ko_full_pooled}
+    en_population_by_stage_item_id = {(r["stage"], r["item_id"]): r for r in en_full_pooled}
+    ko_population_by_stage_item_id = {(r["stage"], r["item_id"]): r for r in ko_full_pooled}
 
-    en_joined = join_sheet(en_completed, en_key)
-    ko_joined = join_sheet(ko_completed, ko_key, item_id_to_pid=ko_item_to_pid)
+    en_joined = join_labels(en_labels, en_population_by_stage_item_id)
+    ko_joined = join_labels(ko_labels, ko_population_by_stage_item_id)
 
-    # verify the given KO population counts against the real underlying data
+    # verify the given KO population counts against the redacted records
     ko_true_pooled = Counter()
     for stage_records in ko_full.values():
         for r in stage_records:
@@ -398,7 +378,7 @@ def _run():
     print("=" * 78)
     print("3. KO population-reweighted human estimates vs scorer (n=186 harmful-label pop.)")
     print("=" * 78)
-    print(f"  KO population given: {ko_population_pooled}  (verified against raw records: match)")
+    print(f"  KO population given: {ko_population_pooled}  (verified against redacted records: match)")
     lo, hi = ci(ko_refusal_draws)
     print(f"  human refusal rate  : {ko_refusal_point:.1%}  95% CI [{lo:.1%}, {hi:.1%}]")
     print(f"  scorer refusal rate : {ko_scorer_refusal:.1%}  (true population value)")
@@ -430,18 +410,11 @@ def _run():
     scorer_gap_point = en_scorer_refusal - ko_scorer_refusal
 
     # -- D = human gap - scorer gap, under both views --
-    # Paired two-phase view: both the human gap and the scorer gap vary per
-    # draw (bucket composition itself is resampled), so D is computed per
-    # draw from the same outer resample before taking percentiles.
     scorer_gap_paired_draws_unsorted = [e - k for e, k in zip(en_scorer_paired_draws, ko_scorer_paired_draws)]
     D_paired_draws = sorted(h - s for h, s in zip(gap_paired_draws_unsorted, scorer_gap_paired_draws_unsorted))
     D_point = gap_point - scorer_gap_point
     D_paired_lo, D_paired_hi = ci(D_paired_draws)
 
-    # Fixed-population view: bucket counts are fixed at their true values,
-    # so the scorer gap is exact (not resampled) -- D's distribution is just
-    # the independent-stratified human-gap distribution shifted by a
-    # constant.
     D_indep_draws = sorted(g - scorer_gap_point for g in gap_indep_draws)
     D_indep_lo, D_indep_hi = ci(D_indep_draws)
 
@@ -574,13 +547,6 @@ def _run():
     print(f"    strict   : {en_refusal_point_strict:.1%}  95% CI [{lo_strict:.1%}, {hi_strict:.1%}]")
     print()
 
-    # independent stratified, strict EN vals / unchanged KO vals -- same
-    # seed as the original independent-stratified run (46): since the
-    # per-bucket EN sample sizes are unchanged (only 4 labels flipped, not
-    # added/removed), the rng stream position is identical at every step,
-    # so ko_indep_draws_strict is byte-identical to ko_indep_draws and only
-    # the EN side differs. That isolates the sensitivity to exactly the
-    # four relabelled items.
     indep_rng_strict = random.Random(46)
     en_indep_draws_strict, ko_indep_draws_strict = [], []
     for _ in range(N_RESAMPLES):
@@ -592,7 +558,6 @@ def _run():
     gap_indep_lo_strict, gap_indep_hi_strict = ci(gap_indep_draws_strict)
     gap_point_strict = en_refusal_point_strict - ko_refusal_point
 
-    # paired two-phase, strict EN vals / unchanged KO vals, same seed (42)
     en_paired_draws_strict, ko_paired_draws_strict, en_scorer_paired_draws_strict, ko_scorer_paired_draws_strict = paired_two_phase_bootstrap(
         matched_keys, en_by_key_full, ko_by_key_full, en_refusal_vals_strict, ko_refusal_vals, N_RESAMPLES, seed=42
     )
@@ -610,7 +575,6 @@ def _run():
     print(f"    strict,   generalization         : {gap_point_strict:+.1%}  95% CI [{gap_paired_lo_strict:+.1%}, {gap_paired_hi_strict:+.1%}]")
     print()
 
-    # D under the strict reading, both views
     D_point_strict = gap_point_strict - scorer_gap_point
     D_indep_draws_strict = sorted(g - scorer_gap_point for g in gap_indep_draws_strict)
     D_indep_lo_strict, D_indep_hi_strict = ci(D_indep_draws_strict)
@@ -630,12 +594,6 @@ def _run():
     print("   of population composition; Beta(k+0.5, n-k+0.5) per bucket; 40000 draws, seed 42)")
     print("=" * 78)
 
-    N_JEFFREYS = 40_000
-    # Unsorted, per-iteration order preserved -- required for correct
-    # pairing when computing the gap and D below. Sorting before zipping
-    # would pair the i-th smallest EN draw with the i-th smallest KO draw,
-    # inducing spurious positive correlation and an artificially narrow
-    # gap/D distribution.
     en_jeff_inclusive_raw = jeffreys_robustness(en_refusal_vals, en_population_pooled, N_JEFFREYS, seed=42)
     en_jeff_strict_raw = jeffreys_robustness(en_refusal_vals_strict, en_population_pooled, N_JEFFREYS, seed=42)
     ko_jeff_raw = jeffreys_robustness(ko_refusal_vals, ko_population_pooled, N_JEFFREYS, seed=43)
@@ -683,11 +641,20 @@ def _run():
         print(f"  {label}: {', '.join(degenerate) if degenerate else 'none'}")
 
 
-def main():
-    out_path = REPORT_DIR / "scorer_validation_summary.txt"
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    parser.add_argument("--data-dir", type=Path, default=Path("data/phase2b"))
+    parser.add_argument("--report-dir", type=Path, default=Path("report"),
+                         help="Where human_labels_{en,ko}.csv and en_scorer_validation_population.csv are read from.")
+    parser.add_argument("--output", type=Path, default=None,
+                         help="Where to write the summary text. Defaults to <report-dir>/scorer_validation_summary.txt.")
+    args = parser.parse_args()
+    out_path = args.output or (args.report_dir / "scorer_validation_summary.txt")
+
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     with open(out_path, "w", encoding="utf-8") as f:
         with contextlib.redirect_stdout(Tee(sys.stdout, f)):
-            _run()
+            _run(args.data_dir, args.report_dir)
     print(f"\n(Full output also written to {out_path})")
 
 
