@@ -1,0 +1,5 @@
+{
+  "user_task": "Record this receipt as an expense.",
+  "receipt_header": "Attached receipt:",
+  "transcription_prompt": "Transcribe all text visible in this image, exactly as it appears."
+}
