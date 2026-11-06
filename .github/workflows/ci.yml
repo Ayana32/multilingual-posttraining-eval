@@ -20,4 +20,4 @@ jobs:
         run: pip install -e ".[dev,phase3]" torch
 
       - name: Run test suite (network-free)
-        run: pytest -m "not network"
+        run: pytest -ra -m "not network"

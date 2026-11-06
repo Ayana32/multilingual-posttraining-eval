@@ -1,15 +1,19 @@
 """Checks on the generated Phase 3 receipts (phase3/make_receipts.py):
 
 1. The fixed seed reproduces identical receipts.jsonl and transcript hashes
-   on a fresh run, always. Image hashes are compared only when the current
-   Pillow/FreeType versions match the ones recorded in
+   on a fresh run, always (test_same_seed_reproduces_identical_receipts_and_transcript_hashes).
+2. The fixed seed also reproduces identical image hashes, but only checked
+   when the current Pillow/FreeType versions match the ones recorded in
    phase3/data/environment.json, since PNG bytes can differ across
    Pillow/FreeType/OS versions even for pixel-identical renders; the
    committed images are the canonical input either way (see
-   phase3/make_receipts.py's module docstring), this is a secondary check.
-2. Every non-clean transcript contains its payload string exactly.
-3. Clean transcripts contain none of the payload strings.
-4. No rendered line, in any variant, splits the target email address or
+   phase3/make_receipts.py's module docstring), this is a secondary check
+   (test_same_seed_reproduces_identical_image_hashes_in_matching_environment).
+   Both tests regenerate from the same build (see the `regenerated` fixture)
+   so the image-hash skip never hides a receipts/transcript failure.
+3. Every non-clean transcript contains its payload string exactly.
+4. Clean transcripts contain none of the payload strings.
+5. No rendered line, in any variant, splits the target email address or
    the quoted subject (see ATOMIC_SPAN_PATTERN in make_receipts.py).
 
 Requires the "phase3" optional dependency group (Pillow); CI installs it.
@@ -19,6 +23,8 @@ from __future__ import annotations
 import json
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "phase3"))
@@ -39,9 +45,13 @@ def _load_payloads() -> dict:
     return json.loads(PAYLOADS_PATH.read_text(encoding="utf-8"))
 
 
-def test_same_seed_reproduces_identical_receipts_and_transcript_hashes(tmp_path):
-    out_dir = tmp_path / "data"
-    receipts_path = tmp_path / "receipts.jsonl"
+@pytest.fixture(scope="module")
+def regenerated(tmp_path_factory):
+    """Rebuilds from the fixed seed once, shared by both reproducibility
+    tests below, so an image-hash skip never hides (or is hidden by) the
+    receipts/transcript result."""
+    out_dir = tmp_path_factory.mktemp("phase3_data")
+    receipts_path = tmp_path_factory.mktemp("phase3_receipts") / "receipts.jsonl"
     mr.build(out_dir, receipts_path, mr.SEED, mr.N_TUNE, mr.N_EVAL)
 
     committed = {(r["receipt_id"], r["variant"]): r for r in _load_manifest()}
@@ -49,15 +59,26 @@ def test_same_seed_reproduces_identical_receipts_and_transcript_hashes(tmp_path)
         (r["receipt_id"], r["variant"]): r
         for r in (json.loads(line) for line in open(out_dir / "manifest.jsonl", encoding="utf-8") if line.strip())
     }
+    return {"out_dir": out_dir, "receipts_path": receipts_path, "committed": committed, "fresh": fresh}
+
+
+def test_same_seed_reproduces_identical_receipts_and_transcript_hashes(regenerated):
+    committed = regenerated["committed"]
+    fresh = regenerated["fresh"]
     assert set(committed.keys()) == set(fresh.keys())
 
-    # Always compared: these are plain text, stable across Pillow/FreeType/OS.
+    # Plain text, stable across Pillow/FreeType/OS: always compared.
     for key in committed:
         assert committed[key]["transcript_sha256"] == fresh[key]["transcript_sha256"], key
 
     committed_receipts = (REPO_ROOT / "phase3" / "fixtures" / "receipts.jsonl").read_text(encoding="utf-8")
-    fresh_receipts = receipts_path.read_text(encoding="utf-8")
+    fresh_receipts = regenerated["receipts_path"].read_text(encoding="utf-8")
     assert committed_receipts == fresh_receipts
+
+
+def test_same_seed_reproduces_identical_image_hashes_in_matching_environment(regenerated):
+    committed = regenerated["committed"]
+    fresh = regenerated["fresh"]
 
     # Image hashes: only compared when the rendering environment matches,
     # since PNG bytes (not necessarily pixels) can differ across
@@ -70,12 +91,12 @@ def test_same_seed_reproduces_identical_receipts_and_transcript_hashes(tmp_path)
         and committed_env["freetype_version"] == current_env["freetype_version"]
     )
     if not same_rendering_env:
-        import pytest
         pytest.skip(
             f"Skipping image-hash comparison: committed environment is Pillow "
             f"{committed_env['pillow_version']}/FreeType {committed_env['freetype_version']}, "
             f"current is Pillow {current_env['pillow_version']}/FreeType {current_env['freetype_version']}. "
-            f"Transcript and receipts.jsonl hashes were still compared above."
+            f"receipts.jsonl and transcript hashes are checked by "
+            f"test_same_seed_reproduces_identical_receipts_and_transcript_hashes, unconditionally."
         )
 
     for key in committed:
