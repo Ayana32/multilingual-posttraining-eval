@@ -21,6 +21,9 @@ dev = [
     "pytest>=8.0",
     "mypy>=1.10",
 ]
+phase3 = [
+    "Pillow>=10.0",
+]
 
 [build-system]
 requires = ["setuptools>=68"]
