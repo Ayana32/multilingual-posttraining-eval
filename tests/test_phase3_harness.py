@@ -561,6 +561,95 @@ def test_guard_refuses_eval_row_when_tag_does_not_exist_yet():
         hz.guard_eval_run(row, commit_b_tag=True, repo_root=REPO_ROOT)
 
 
+# ---------------------------------------------------------------------------
+# head_is_commit_b_or_descendant / the stronger eval guard -- exercised
+# against a throwaway git repo with its own "phase3-prereg-B" tag, not this
+# project's own repo (which has no such tag yet).
+# ---------------------------------------------------------------------------
+
+def _git(repo: Path, *args: str) -> str:
+    result = subprocess.run(["git", *args], cwd=repo, check=True, capture_output=True, text=True)
+    return result.stdout.strip()
+
+
+def _build_commit_b_repo(repo: Path) -> dict[str, str]:
+    """Builds A -> B (tagged phase3-prereg-B) -> C, with HEAD left at C
+    (a descendant of the tag) when this returns."""
+    _git(repo, "init", "-q")
+    _git(repo, "config", "user.email", "test@example.com")
+    _git(repo, "config", "user.name", "Test")
+
+    (repo / "f.txt").write_text("a\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "A")
+    commit_a = _git(repo, "rev-parse", "HEAD")
+
+    (repo / "f.txt").write_text("b\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "B")
+    commit_b = _git(repo, "rev-parse", "HEAD")
+    _git(repo, "tag", hz.COMMIT_B_TAG)
+
+    (repo / "f.txt").write_text("c\n", encoding="utf-8")
+    _git(repo, "add", ".")
+    _git(repo, "commit", "-q", "-m", "C")
+    commit_c = _git(repo, "rev-parse", "HEAD")
+
+    return {"A": commit_a, "B": commit_b, "C": commit_c}
+
+
+def test_head_is_commit_b_or_descendant_true_at_the_tag_commit(tmp_path):
+    commits = _build_commit_b_repo(tmp_path)
+    _git(tmp_path, "checkout", "-q", commits["B"])
+    assert hz.head_is_commit_b_or_descendant(tmp_path) is True
+
+
+def test_head_is_commit_b_or_descendant_true_for_a_later_descendant(tmp_path):
+    commits = _build_commit_b_repo(tmp_path)
+    assert commits  # HEAD is already at C after building
+    assert hz.head_is_commit_b_or_descendant(tmp_path) is True
+
+
+def test_head_is_commit_b_or_descendant_false_before_the_tag(tmp_path):
+    commits = _build_commit_b_repo(tmp_path)
+    _git(tmp_path, "checkout", "-q", commits["A"])
+    assert hz.head_is_commit_b_or_descendant(tmp_path) is False
+
+
+def test_head_is_commit_b_or_descendant_false_on_a_diverged_branch(tmp_path):
+    commits = _build_commit_b_repo(tmp_path)
+    _git(tmp_path, "checkout", "-q", commits["A"])
+    _git(tmp_path, "checkout", "-q", "-b", "diverged")
+    (tmp_path / "f.txt").write_text("d\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "D (diverged from A, never saw B)")
+    assert hz.head_is_commit_b_or_descendant(tmp_path) is False
+
+
+def test_head_is_commit_b_or_descendant_false_when_tag_is_missing(tmp_path):
+    _git(tmp_path, "init", "-q")
+    _git(tmp_path, "config", "user.email", "test@example.com")
+    _git(tmp_path, "config", "user.name", "Test")
+    (tmp_path / "f.txt").write_text("x\n", encoding="utf-8")
+    _git(tmp_path, "add", ".")
+    _git(tmp_path, "commit", "-q", "-m", "only commit, no tag")
+    assert hz.head_is_commit_b_or_descendant(tmp_path) is False
+
+
+def test_guard_eval_run_passes_when_head_is_a_commit_b_descendant(tmp_path):
+    _build_commit_b_repo(tmp_path)  # HEAD left at C
+    row = {"receipt_set": "eval"}
+    hz.guard_eval_run(row, commit_b_tag=True, repo_root=tmp_path)  # must not raise
+
+
+def test_guard_eval_run_refuses_when_head_is_before_the_tag(tmp_path):
+    commits = _build_commit_b_repo(tmp_path)
+    _git(tmp_path, "checkout", "-q", commits["A"])
+    row = {"receipt_set": "eval"}
+    with pytest.raises(hz.EvalGuardError):
+        hz.guard_eval_run(row, commit_b_tag=True, repo_root=tmp_path)
+
+
 def test_run_agent_refuses_eval_row_before_calling_generate_fn():
     fixtures = _load_fixtures()
     row = next(r for r in _load_manifest() if r["receipt_set"] == "eval")

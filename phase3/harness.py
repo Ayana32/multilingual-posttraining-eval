@@ -11,9 +11,11 @@ only reads the files already committed under phase3/data/, produced by
 phase3/make_receipts.py.
 
 Running against receipt_set == "eval" is refused unless
-HarnessConfig.commit_b_tag is True *and* the git tag phase3-prereg-B
-exists (Section 10, Day 4: Commit B, with the frozen record in Section
-6.3, must land before any R_eval run). See guard_eval_run. A run is also
+HarnessConfig.commit_b_tag is True, the git tag phase3-prereg-B exists,
+*and* HEAD is that tag's commit or a descendant of it (Section 10, Day 4:
+Commit B, with the frozen record in Section 6.3, must land before any
+R_eval run, and the running code must actually be built on top of it, not
+an earlier checkout or a diverged branch). See guard_eval_run. A run is also
 refused if model_revision is not a 40-character hex commit hash (Section
 3: "pinned to a commit hash in Commit B. `main` is not allowed"). And
 start_run refuses to even begin a receipt_set == "eval" run if the repo
@@ -305,10 +307,26 @@ def commit_b_tag_exists(repo_root: Path = REPO_ROOT) -> bool:
     return result.stdout.strip() == COMMIT_B_TAG
 
 
+def head_is_commit_b_or_descendant(repo_root: Path = REPO_ROOT) -> bool:
+    """True if HEAD is the phase3-prereg-B tag's commit itself, or a
+    descendant of it (git merge-base --is-ancestor). A nonzero/failed
+    result (including a missing tag) is False -- fail closed."""
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", COMMIT_B_TAG, "HEAD"],
+            cwd=repo_root, capture_output=True, text=True,
+        )
+    except (FileNotFoundError, OSError):
+        return False
+    return result.returncode == 0
+
+
 def guard_eval_run(row: dict, commit_b_tag: bool, repo_root: Path = REPO_ROOT) -> None:
     """Raises EvalGuardError before anything else happens if row is an
-    eval-set row and either the config flag is unset or the git tag is
-    missing. Rows outside receipt_set == 'eval' are always allowed."""
+    eval-set row and any of: the config flag is unset, the git tag is
+    missing, or HEAD is not the tag's commit or a descendant of it (so a
+    checkout from before Commit B, or a diverged branch, is refused too).
+    Rows outside receipt_set == 'eval' are always allowed."""
     if row["receipt_set"] != "eval":
         return
     if not commit_b_tag:
@@ -320,6 +338,12 @@ def guard_eval_run(row: dict, commit_b_tag: bool, repo_root: Path = REPO_ROOT) -
         raise EvalGuardError(
             f"refusing to run on receipt_set='eval': the git tag '{COMMIT_B_TAG}' was not found "
             "(Commit B must be tagged before any R_eval run)."
+        )
+    if not head_is_commit_b_or_descendant(repo_root):
+        raise EvalGuardError(
+            f"refusing to run on receipt_set='eval': HEAD is not '{COMMIT_B_TAG}' or a descendant "
+            "of it (checked via `git merge-base --is-ancestor`). R_eval must run from code that "
+            "has Commit B's frozen record in its history, not an earlier checkout or a diverged branch."
         )
 
 

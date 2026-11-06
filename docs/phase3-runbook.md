@@ -9,10 +9,31 @@ deviations log (`docs/phase3-deviations.md`).
 
 - Image: `runpod/pytorch:1.0.2-cu1281-torch280-ubuntu2404`
 - GPU: 1x NVIDIA A40 (Secure Cloud, ~$0.59/hr)
+- Repo setup is a **git clone at a named commit**, not an upload or a bare
+  checkout -- this is what makes `/root/repo` a real git repository (a
+  `.git` directory present) that `harness.git_commit_hash`/`git_is_dirty`
+  can read, rather than something the dirty-repo R_eval guard would refuse
+  outright for lacking `.git`:
+  ```bash
+  git clone https://github.com/Ayana32/multilingual-posttraining-eval.git /root/repo
+  cd /root/repo
+  git fetch --tags
+  git checkout <commit>   # e.g. ebd4030, the harness-code commit -- see the
+                          # correction note below for what this hash is NOT
+  ```
 - The image ships torch already installed; `pip install -e ".[dev,phase3,hf]"`
   plus a pinned `transformers==4.57.1` (see `phase3/config.yaml`) is layered on
-  top of it. No venv: installing into the image's system Python avoids
-  re-downloading torch.
+  top of it, run from inside `/root/repo`. No venv: installing into the
+  image's system Python avoids re-downloading torch.
+- `pip install -e .` creates `src/mpe.egg-info/` inside the repo; this is
+  already covered by `.gitignore`'s `*.egg-info/` entry, confirmed locally
+  by cloning this repo fresh, running `pip install -e .`, and checking
+  `git status --porcelain` stays empty. Combined with keeping nohup logs
+  outside the repo (next section), a pod set up this way starts, and stays,
+  clean -- `git_is_dirty` returns `False`, so `start_run(receipt_set="eval")`
+  is not spuriously refused. `git_is_dirty` does count untracked files (not
+  just modified tracked ones) by design; the fix here is keeping the
+  workflow from creating any inside the repo, not loosening that check.
 
 ## Environment recorded during the gate run
 
@@ -77,7 +98,11 @@ EOF
 
 Long-running steps (model download, test suite, each gate) were launched with
 `nohup ... > log 2>&1 & disown`, so they survive the SSH session ending, then
-polled by reconnecting and checking the log/process.
+polled by reconnecting and checking the log/process. The log files (e.g.
+`/root/run_g2.log`) are written **outside** `/root/repo` entirely (directly
+under `/root/`), not into a gitignored folder inside the repo -- either
+would keep the repo clean, but staying outside the repo is simplest and is
+what this run actually did.
 
 **Pitfall:** because the pty echoes back whatever is piped into it, a polling
 command like `grep -c "G2_END" file.log` self-matches on its own echoed
@@ -102,7 +127,22 @@ python3 phase3/gates.py g1a
 python3 phase3/gates.py g0
 ```
 
-Each writes/merges its result into `report/phase3_gate_report.json` and
-prints `PASS`/`FAIL`. All four passed (2026-11-06); see
-`report/phase3_gate_report.json` and `report/phase3_gate_artifacts/` for the
-G2 rendered prompts.
+Each writes/merges its result into `report/phase3_gate_report.json` **on the
+pod** (i.e. `/root/repo/report/phase3_gate_report.json`), and prints
+`PASS`/`FAIL`. That file only exists on the pod's disk, though -- getting it
+into this repo took two more steps, both manual, since scp/sftp don't work
+here: the file contents were pulled back over the SSH heredoc approach above
+into `results/phase3/gates/` (gitignored, not committed) first, and only
+then copied from there into the committed `report/phase3_gate_report.json`
+and `report/phase3_gate_artifacts/` (with the on-pod `/root/repo/...` paths
+inside the JSON rewritten to be repo-relative). All four gates passed
+(2026-11-06).
+
+## Correction (added 2026-11-06, after commit 835a833)
+
+Commit 835a833's message says "Qwen3-VL-8B-Instruct @ ebd4030". `ebd4030` is
+the **harness code** commit (`phase3/config.yaml`'s revision was pinned in
+that commit), not the **model's** revision. The model (Qwen3-VL-8B-Instruct)
+was pinned to `0c351dd01ed87e9c1b53cbc748cba10e6187ff3b` (see
+`phase3/config.yaml`'s `model_revision`). The commit message is left as-is
+(no amend, no force push); this note is the correction.

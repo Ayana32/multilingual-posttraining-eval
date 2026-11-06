@@ -11,11 +11,17 @@ template_fn/generate_fn -- no real model is downloaded or run:
 4. load_config reads phase3/config.yaml, and its placeholder
    model_revision is refused by validate_model_revision (by design --
    Commit B must pin a real one first).
+5. main() (the CLI entry point) routes through harness.start_run, so
+   every run -- including Day 4 phrase selection, which uses this CLI,
+   not phase3/gates.py -- records git_commit/git_dirty/pip_freeze.
+   Exercised with a receipt_ids filter that selects zero manifest rows,
+   so run_agent_rows never calls generate_fn and no real model is touched.
 
 Requires the "phase3" optional dependency group (Pillow); CI installs it.
 """
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -270,3 +276,35 @@ def test_load_config_reads_phase3_config_yaml():
     # (Day 3b-2), so it must pass validate_model_revision -- this is not
     # yet Commit B (Section 6.3), which still needs phrase selection.
     hz.validate_model_revision(config.model_revision)
+
+
+# ---------------------------------------------------------------------------
+# main() routes through start_run (this is the entry point Day 4 phrase
+# selection will use, not phase3/gates.py)
+# ---------------------------------------------------------------------------
+
+def test_main_cli_routes_through_start_run_recording_code_version(tmp_path, monkeypatch):
+    out_dir = tmp_path / "out"
+    argv = [
+        "run.py",
+        "--receipt-set", "tune",
+        # A receipt_id that doesn't exist selects zero manifest rows, so
+        # run_agent_rows never calls generate_fn -- no real model is
+        # downloaded or run by this test.
+        "--receipt-ids", "no_such_receipt_id",
+        "--out-dir", str(out_dir),
+    ]
+    monkeypatch.setattr(sys, "argv", argv)
+
+    run_module.main()
+
+    env_path = out_dir / "environment.json"
+    assert env_path.exists()
+    info = json.loads(env_path.read_text(encoding="utf-8"))
+    assert "git_commit" in info
+    assert "git_dirty" in info
+    assert "pip_freeze" in info
+
+    records_path = out_dir / "records.jsonl"
+    assert records_path.exists()
+    assert records_path.read_text(encoding="utf-8") == ""
