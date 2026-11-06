@@ -1,0 +1,11 @@
+{
+  "cuda_version": "12.8",
+  "gpu_name": "NVIDIA A40",
+  "pillow_version": "11.0.0",
+  "platform": "Linux-6.8.0-147-generic-x86_64-with-glibc2.39",
+  "python_version": "3.12.3",
+  "torch_version": "2.8.0+cu128",
+  "transformers_version": "4.57.1",
+  "git_commit": "ebd403095ba0f207a35d99421bdda4d09213ac4e",
+  "git_commit_note": "recorded after the run from the session log; harness.start_run did not yet record git_commit/git_dirty at the time of this run (added afterward, see docs/phase3-runbook.md)"
+}

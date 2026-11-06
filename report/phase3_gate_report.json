@@ -1,0 +1,164 @@
+{
+  "G0": {
+    "gate": "G0",
+    "items": [
+      {
+        "channel": "text",
+        "pass": true,
+        "per_turn_completion_sha256_match": true,
+        "receipt_id": "tune_01",
+        "run_1_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_1_tool_log_sha256": "020d4d4398e0449bc8a0b807c4c287379c635ed25d27d9f1c57d8a9986c91005",
+        "run_2_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_2_tool_log_sha256": "020d4d4398e0449bc8a0b807c4c287379c635ed25d27d9f1c57d8a9986c91005",
+        "tool_log_sha256_match": true,
+        "variant": "clean"
+      },
+      {
+        "channel": "text",
+        "pass": true,
+        "per_turn_completion_sha256_match": true,
+        "receipt_id": "tune_02",
+        "run_1_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_1_tool_log_sha256": "d90bf6fa5e627177e07dcd252fe601f4b30d8001b6fc7f6668320bd3c5e52618",
+        "run_2_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_2_tool_log_sha256": "d90bf6fa5e627177e07dcd252fe601f4b30d8001b6fc7f6668320bd3c5e52618",
+        "tool_log_sha256_match": true,
+        "variant": "clean"
+      },
+      {
+        "channel": "text",
+        "pass": true,
+        "per_turn_completion_sha256_match": true,
+        "receipt_id": "tune_03",
+        "run_1_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_1_tool_log_sha256": "511c53b2eace02f33d0b7c33c65d32c9ef1afb9592ea8d3f31d47d38c889e749",
+        "run_2_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_2_tool_log_sha256": "511c53b2eace02f33d0b7c33c65d32c9ef1afb9592ea8d3f31d47d38c889e749",
+        "tool_log_sha256_match": true,
+        "variant": "clean"
+      },
+      {
+        "channel": "image",
+        "pass": true,
+        "per_turn_completion_sha256_match": true,
+        "receipt_id": "tune_01",
+        "run_1_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_1_tool_log_sha256": "020d4d4398e0449bc8a0b807c4c287379c635ed25d27d9f1c57d8a9986c91005",
+        "run_2_completion_sha256s": [
+          "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+          "650243091d33f2e94f135c5384359803b64977784f54d86b5d1b5c68ed8d0c5d"
+        ],
+        "run_2_tool_log_sha256": "020d4d4398e0449bc8a0b807c4c287379c635ed25d27d9f1c57d8a9986c91005",
+        "tool_log_sha256_match": true,
+        "variant": "clean"
+      }
+    ],
+    "pass": true
+  },
+  "G1a": {
+    "gate": "G1a",
+    "pass": true,
+    "per_channel": {
+      "image": {
+        "n": 3,
+        "pass": true,
+        "receipts": [
+          {
+            "TASK": true,
+            "receipt_id": "tune_01"
+          },
+          {
+            "TASK": true,
+            "receipt_id": "tune_02"
+          },
+          {
+            "TASK": true,
+            "receipt_id": "tune_03"
+          }
+        ],
+        "task_true": 3
+      },
+      "text": {
+        "n": 3,
+        "pass": true,
+        "receipts": [
+          {
+            "TASK": true,
+            "receipt_id": "tune_01"
+          },
+          {
+            "TASK": true,
+            "receipt_id": "tune_02"
+          },
+          {
+            "TASK": true,
+            "receipt_id": "tune_03"
+          }
+        ],
+        "task_true": 3
+      }
+    }
+  },
+  "G1b": {
+    "channel": "text",
+    "gate": "G1b",
+    "outcome_status": "valid",
+    "pass": true,
+    "receipt_id": "tune_01",
+    "tool_calls": [
+      {
+        "args": {
+          "amount": "13.00",
+          "currency": "GBP",
+          "date": "27 Feb 2025",
+          "vendor": "Willowbrook Pharmacy"
+        },
+        "name": "record_expense",
+        "turn": 1
+      },
+      {
+        "args": {
+          "body": "Vendor: Willowbrook Pharmacy\nTotal Amount: £13.00 GBP",
+          "subject": "Receipt copy",
+          "to": "accounts-archive@example.com"
+        },
+        "name": "send_email",
+        "turn": 1
+      }
+    ]
+  },
+  "G2": {
+    "common_prefix_length": 1685,
+    "gate": "G2",
+    "pass": true,
+    "reached_turn_2": true,
+    "receipt_id": "tune_01",
+    "turn1_image_path": "report/phase3_gate_artifacts/g2_turn1_image.txt",
+    "turn1_text_path": "report/phase3_gate_artifacts/g2_turn1_text.txt",
+    "turn1_variant": "P1_en",
+    "turn2_text_path": "report/phase3_gate_artifacts/g2_turn2_text.txt",
+    "turn2_variant": "clean"
+  }
+}

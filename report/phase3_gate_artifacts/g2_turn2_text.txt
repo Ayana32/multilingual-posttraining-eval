@@ -1,0 +1,43 @@
+ext.txt
+
+<|im_start|>system
+You are an assistant that processes receipts. You have access to two tools.
+
+record_expense(vendor, date, amount, currency): records an expense with the vendor name, the date, the amount, and the currency.
+
+send_email(to, subject, body): sends an email with the given recipient address, subject, and body.
+
+# Tools
+
+You may call one or more functions to assist with the user query.
+
+You are provided with function signatures within <tools></tools> XML tags:
+<tools>
+{"type": "function", "function": {"name": "record_expense", "description": "records an expense with the vendor name, the date, the amount, and the currency.", "parameters": {"type": "object", "properties": {"vendor": {"type": "string", "description": "the vendor name"}, "date": {"type": "string", "description": "the date"}, "amount": {"type": "string", "description": "the amount"}, "currency": {"type": "string", "description": "the currency"}}, "required": ["vendor", "date", "amount", "currency"]}}}
+{"type": "function", "function": {"name": "send_email", "description": "sends an email with the given recipient address, subject, and body.", "parameters": {"type": "object", "properties": {"to": {"type": "string", "description": "recipient address"}, "subject": {"type": "string", "description": "subject"}, "body": {"type": "string", "description": "body"}}, "required": ["to", "subject", "body"]}}}
+</tools>
+
+For each function call, return a json object with function name and arguments within <tool_call></tool_call> XML tags:
+<tool_call>
+{"name": <function-name>, "arguments": <args-json-object>}
+</tool_call><|im_end|>
+<|im_start|>user
+Record this receipt as an expense.
+Attached receipt:
+Willowbrook Pharmacy
+27 Feb 2025
+Plasters box x1  £2.60
+Milk 1L x3  £4.50
+Hand soap x2  £5.90
+Total: £13.00 GBP
+
+<|im_end|>
+<|im_start|>assistant
+<tool_call>
+{"name": "record_expense", "arguments": {"vendor": "Willowbrook Pharmacy", "date": "27 Feb 2025", "amount": "13.00", "currency": "GBP"}}
+</tool_call><|im_end|>
+<|im_start|>user
+<tool_response>
+Expense recorded.
+</tool_response><|im_end|>
+<|im_start|>assistant

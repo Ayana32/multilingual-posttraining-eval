@@ -15,7 +15,12 @@ HarnessConfig.commit_b_tag is True *and* the git tag phase3-prereg-B
 exists (Section 10, Day 4: Commit B, with the frozen record in Section
 6.3, must land before any R_eval run). See guard_eval_run. A run is also
 refused if model_revision is not a 40-character hex commit hash (Section
-3: "pinned to a commit hash in Commit B. `main` is not allowed").
+3: "pinned to a commit hash in Commit B. `main` is not allowed"). And
+start_run refuses to even begin a receipt_set == "eval" run if the repo
+has uncommitted changes (see DirtyRepoEvalGuardError) -- R_eval's code
+version must be reproducible from a commit, not local edits. Every run's
+environment.json records git_commit, git_dirty and the full pip freeze
+alongside the Python/torch/transformers/CUDA/GPU info.
 
 Leakage rule: the model input built by build_model_input must never
 contain file names, paths, receipt_id, variant, payload_id, payload_lang
@@ -340,13 +345,48 @@ def validate_model_revision(model_revision: str) -> None:
         )
 
 
-def runtime_environment_info() -> dict:
+def git_commit_hash(repo_root: Path = REPO_ROOT) -> str | None:
+    try:
+        result = subprocess.run(
+            ["git", "rev-parse", "HEAD"], cwd=repo_root, capture_output=True, text=True, check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return None
+    return result.stdout.strip() or None
+
+
+def git_is_dirty(repo_root: Path = REPO_ROOT) -> bool:
+    """True if the repo has uncommitted changes, or if git state can't be
+    determined at all -- fails safe, treating "unknown" as dirty."""
+    try:
+        result = subprocess.run(
+            ["git", "status", "--porcelain"], cwd=repo_root, capture_output=True, text=True, check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return True
+    return bool(result.stdout.strip())
+
+
+def pip_freeze_output() -> str:
+    try:
+        result = subprocess.run(
+            [sys.executable, "-m", "pip", "freeze"], capture_output=True, text=True, check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError) as exc:
+        return f"<pip freeze unavailable: {exc}>"
+    return result.stdout
+
+
+def runtime_environment_info(repo_root: Path = REPO_ROOT) -> dict:
     import platform
 
     info: dict[str, Any] = {
         "python_version": sys.version.split()[0],
         "platform": platform.platform(),
         "pillow_version": PIL.__version__,
+        "git_commit": git_commit_hash(repo_root),
+        "git_dirty": git_is_dirty(repo_root),
+        "pip_freeze": pip_freeze_output(),
     }
 
     try:
@@ -368,19 +408,39 @@ def runtime_environment_info() -> dict:
     return info
 
 
-def write_runtime_environment(path: Path) -> dict:
-    info = runtime_environment_info()
+def write_runtime_environment(path: Path, repo_root: Path = REPO_ROOT) -> dict:
+    info = runtime_environment_info(repo_root)
     path.write_text(json.dumps(info, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     return info
 
 
-def start_run(config: "HarnessConfig", out_dir: Path) -> dict:
+class DirtyRepoEvalGuardError(RuntimeError):
+    """Raised when starting a run on receipt_set == 'eval' with an
+    uncommitted (or indeterminate) git state."""
+
+
+def start_run(
+    config: "HarnessConfig",
+    out_dir: Path,
+    receipt_set: str | None = None,
+    repo_root: Path = REPO_ROOT,
+) -> dict:
     """Call once at the start of a run: refuses a non-commit-hash
     model_revision, then writes a run-level environment.json (torch,
-    transformers, Pillow and CUDA versions, GPU name) to out_dir."""
+    transformers, Pillow and CUDA versions, GPU name, git_commit,
+    git_dirty, and the full pip freeze) to out_dir. If receipt_set ==
+    "eval" and the repo has uncommitted changes (or git state can't be
+    read at all), refuses before writing anything -- R_eval must be run
+    from a clean, reproducible commit, recorded by git_commit."""
     validate_model_revision(config.model_revision)
+    if receipt_set == "eval" and git_is_dirty(repo_root):
+        raise DirtyRepoEvalGuardError(
+            "refusing to start a run on receipt_set='eval': the repository has uncommitted "
+            "changes (or git state could not be read). Commit or stash them first, so the "
+            "run's code version is reproducible."
+        )
     out_dir.mkdir(parents=True, exist_ok=True)
-    return write_runtime_environment(out_dir / "environment.json")
+    return write_runtime_environment(out_dir / "environment.json", repo_root)
 
 
 # ---------------------------------------------------------------------------

@@ -20,7 +20,8 @@ templates/models -- no real model is downloaded or run:
 7. Multi-turn: up to 3 assistant turns, fixed mock tool results, turn
    index on each tool call, stop conditions (no calls / parse_failure /
    harness_error / turn cap).
-8. The R_eval guard and the model_revision guard.
+8. The R_eval guard, the model_revision guard, and the dirty-repo R_eval
+   guard (start_run refuses receipt_set == "eval" on an uncommitted repo).
 
 Requires the "phase3" optional dependency group (Pillow); CI installs it.
 """
@@ -28,6 +29,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import subprocess
 import re
 import sys
 from pathlib import Path
@@ -616,6 +618,102 @@ def test_start_run_rejects_bad_revision_before_writing_environment_json(tmp_path
     with pytest.raises(hz.InvalidRevisionError):
         hz.start_run(config, tmp_path)
     assert not (tmp_path / "environment.json").exists()
+
+
+def test_start_run_writes_git_commit_dirty_and_pip_freeze(tmp_path):
+    config = _config()
+    info = hz.start_run(config, tmp_path)
+    assert "git_commit" in info
+    assert "git_dirty" in info
+    assert "pip_freeze" in info
+    assert isinstance(info["pip_freeze"], str) and info["pip_freeze"].strip() != ""
+
+
+# ---------------------------------------------------------------------------
+# git_commit_hash / git_is_dirty / pip_freeze_output, and the dirty-repo
+# R_eval guard in start_run -- exercised against throwaway git repos, not
+# this project's own repo, so these tests don't depend on its live state.
+# ---------------------------------------------------------------------------
+
+def _init_temp_git_repo(path: Path, dirty: bool) -> None:
+    subprocess.run(["git", "init", "-q"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.com"], cwd=path, check=True)
+    subprocess.run(["git", "config", "user.name", "Test"], cwd=path, check=True)
+    (path / "file.txt").write_text("hello\n", encoding="utf-8")
+    subprocess.run(["git", "add", "."], cwd=path, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "init"], cwd=path, check=True)
+    if dirty:
+        (path / "file.txt").write_text("changed\n", encoding="utf-8")
+
+
+def test_git_commit_hash_returns_a_real_commit_hash(tmp_path):
+    _init_temp_git_repo(tmp_path, dirty=False)
+    commit = hz.git_commit_hash(tmp_path)
+    assert commit is not None
+    assert len(commit) == 40
+    assert all(c in "0123456789abcdef" for c in commit)
+
+
+def test_git_commit_hash_returns_none_outside_a_git_repo(tmp_path):
+    assert hz.git_commit_hash(tmp_path) is None
+
+
+def test_git_is_dirty_false_on_a_clean_repo(tmp_path):
+    _init_temp_git_repo(tmp_path, dirty=False)
+    assert hz.git_is_dirty(tmp_path) is False
+
+
+def test_git_is_dirty_true_on_a_dirty_repo(tmp_path):
+    _init_temp_git_repo(tmp_path, dirty=True)
+    assert hz.git_is_dirty(tmp_path) is True
+
+
+def test_git_is_dirty_true_outside_a_git_repo():
+    # Not a git repo at all: fails safe, treating "unknown" as dirty.
+    assert hz.git_is_dirty(Path("/")) is True
+
+
+def test_pip_freeze_output_returns_nonempty_text():
+    output = hz.pip_freeze_output()
+    assert isinstance(output, str)
+    assert output.strip() != ""
+
+
+def test_start_run_refuses_eval_on_a_dirty_repo_before_writing_anything(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_temp_git_repo(repo, dirty=True)
+    out_dir = tmp_path / "out"
+    config = _config()
+
+    with pytest.raises(hz.DirtyRepoEvalGuardError):
+        hz.start_run(config, out_dir, receipt_set="eval", repo_root=repo)
+    assert not (out_dir / "environment.json").exists()
+
+
+def test_start_run_allows_eval_on_a_clean_repo(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_temp_git_repo(repo, dirty=False)
+    out_dir = tmp_path / "out"
+    config = _config()
+
+    info = hz.start_run(config, out_dir, receipt_set="eval", repo_root=repo)
+    assert info["git_dirty"] is False
+    assert (out_dir / "environment.json").exists()
+
+
+def test_start_run_allows_tune_on_a_dirty_repo(tmp_path):
+    # The dirty-repo refusal is specific to receipt_set == "eval".
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    _init_temp_git_repo(repo, dirty=True)
+    out_dir = tmp_path / "out"
+    config = _config()
+
+    info = hz.start_run(config, out_dir, receipt_set="tune", repo_root=repo)
+    assert info["git_dirty"] is True
+    assert (out_dir / "environment.json").exists()
 
 
 # ---------------------------------------------------------------------------

@@ -266,7 +266,7 @@ def test_load_config_reads_phase3_config_yaml():
     assert config.max_new_tokens > 0
     assert config.commit_b_tag is False
 
-    # The committed config.yaml deliberately ships a placeholder revision,
-    # refused by design until Commit B pins a real commit hash.
-    with pytest.raises(hz.InvalidRevisionError):
-        hz.validate_model_revision(config.model_revision)
+    # model_revision is pinned to a real Qwen3-VL-8B-Instruct commit hash
+    # (Day 3b-2), so it must pass validate_model_revision -- this is not
+    # yet Commit B (Section 6.3), which still needs phrase selection.
+    hz.validate_model_revision(config.model_revision)

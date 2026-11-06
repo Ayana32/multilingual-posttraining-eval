@@ -204,7 +204,7 @@ def main() -> None:
     )
 
     args.out_dir.mkdir(parents=True, exist_ok=True)
-    hz.start_run(config, args.out_dir)
+    hz.start_run(config, args.out_dir, receipt_set=args.receipt_set)
 
     template_fn = hz.build_hf_template_fn(config)
     generate_fn = hz.build_hf_generate_fn(config)
