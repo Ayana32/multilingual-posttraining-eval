@@ -1,0 +1,12 @@
+# phase3/run.py config. model_revision is intentionally not a real commit
+# hash yet: Commit B (docs/phase3-visual-injection.md Section 6.3) pins
+# model_id, model_revision and max_new_tokens before any R_eval run. Until
+# then, phase3/harness.py's validate_model_revision refuses to run with
+# this file at all (Section 3: "pinned to a commit hash in Commit B.
+# `main` is not allowed") -- that refusal is deliberate, not a bug.
+model_id: Qwen/Qwen3-VL-8B-Instruct
+model_revision: PLACEHOLDER_NOT_A_COMMIT_HASH
+max_new_tokens: 1024
+device: cuda
+dtype: auto
+commit_b_tag: false

@@ -352,8 +352,8 @@ def test_run_agent_records_rendered_prompts_and_stable_prompt_sha256():
     row = _row("tune_01", "clean")
     config = _config()
 
-    record_a = hz.run_agent(row, "text", fixtures, _fake_template_fn, lambda p, imgs: "Nothing to do.", config, DATA_DIR)
-    record_b = hz.run_agent(row, "text", fixtures, _fake_template_fn, lambda p, imgs: "Nothing to do.", config, DATA_DIR)
+    record_a = hz.run_agent(row, "text", fixtures, _fake_template_fn, lambda p, imgs: ("Nothing to do.", False), config, DATA_DIR)
+    record_b = hz.run_agent(row, "text", fixtures, _fake_template_fn, lambda p, imgs: ("Nothing to do.", False), config, DATA_DIR)
 
     expected_turn_1_prompt = _fake_template_fn(
         hz.build_model_input(row, "text", fixtures, DATA_DIR)["messages"],
@@ -369,7 +369,7 @@ def test_run_agent_records_rendered_prompts_and_stable_prompt_sha256():
 
     other_row = _row("tune_01", "P1_en")
     record_other = hz.run_agent(
-        other_row, "text", fixtures, _fake_template_fn, lambda p, imgs: "Nothing to do.", config, DATA_DIR
+        other_row, "text", fixtures, _fake_template_fn, lambda p, imgs: ("Nothing to do.", False), config, DATA_DIR
     )
     assert record_other["prompt_sha256"] != record_a["prompt_sha256"]
 
@@ -388,12 +388,14 @@ _SEND_EMAIL_CALL = (
 )
 
 
-def _scripted_generate_fn(responses: list[str]):
+def _scripted_generate_fn(responses: list[str], hit_max_new_tokens: list[bool] | None = None):
     call_log: list[str] = []
 
-    def generate_fn(rendered_prompt: str, images) -> str:
+    def generate_fn(rendered_prompt: str, images) -> tuple[str, bool]:
         call_log.append(rendered_prompt)
-        return responses[len(call_log) - 1]
+        i = len(call_log) - 1
+        hit = hit_max_new_tokens[i] if hit_max_new_tokens is not None else False
+        return responses[i], hit
 
     return generate_fn, call_log
 
@@ -483,7 +485,7 @@ def test_run_agent_stops_immediately_on_harness_error_mid_loop():
         call_count["n"] += 1
         if call_count["n"] == 2:
             raise RuntimeError("simulated crash")
-        return _RECORD_EXPENSE_CALL
+        return _RECORD_EXPENSE_CALL, False
 
     record = hz.run_agent(row, "text", fixtures, _fake_template_fn, generate_fn, config, DATA_DIR)
     assert call_count["n"] == 2
@@ -494,6 +496,24 @@ def test_run_agent_stops_immediately_on_harness_error_mid_loop():
     assert [c["turn"] for c in record["tool_calls"]] == [1]
     # The turn-2 prompt was rendered before generate_fn raised.
     assert len(record["rendered_prompts"]) == 2
+    # No token count is available for a turn that raised instead of
+    # returning; that turn's entry is False, not omitted.
+    assert record["hit_max_new_tokens_per_turn"] == [False, False]
+
+
+def test_run_agent_records_hit_max_new_tokens_per_turn():
+    fixtures = _load_fixtures()
+    row = _row("tune_01", "clean")
+    config = _config()
+
+    generate_fn, call_log = _scripted_generate_fn(
+        [_RECORD_EXPENSE_CALL, "Done."], hit_max_new_tokens=[True, False],
+    )
+    record = hz.run_agent(row, "text", fixtures, _fake_template_fn, generate_fn, config, DATA_DIR)
+
+    assert len(call_log) == 2
+    assert record["hit_max_new_tokens_per_turn"] == [True, False]
+    assert len(record["hit_max_new_tokens_per_turn"]) == len(record["raw_output"])
 
 
 def test_run_agent_single_turn_no_call_ends_immediately():

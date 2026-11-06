@@ -44,6 +44,11 @@ registers them as special tokens (see decode_raw_output), and a model
 that emits call-shaped JSON without the <tool_call> wrapper at all (see
 contains_untagged_tool_call_json) -- the latter is treated as
 parse_failure, never as "valid, no call".
+
+generate_fn returns (raw_text, hit_max_new_tokens) per turn --
+hit_max_new_tokens_per_turn is recorded so a parse_failure caused by a
+truncated tool call (max_new_tokens cut generation off mid-JSON) can be
+told apart from one the model actually produced.
 """
 from __future__ import annotations
 
@@ -142,7 +147,7 @@ def make_mock_tools(log: ToolLog) -> dict[str, Callable[..., str]]:
 # Model input construction (Section 4.3)
 # ---------------------------------------------------------------------------
 
-def _load_image(data_dir: Path, image_path: str) -> Image.Image:
+def load_image(data_dir: Path, image_path: str) -> Image.Image:
     image_bytes = (data_dir / image_path).read_bytes()
     return Image.open(io.BytesIO(image_bytes)).convert("RGB")
 
@@ -170,7 +175,7 @@ def build_model_input(row: dict, channel: str, fixtures: Fixtures, data_dir: Pat
         raise ValueError(f"unknown channel: {channel!r}")
 
     if channel == "image":
-        receipt_block = {"type": "image", "image": _load_image(data_dir, row["image_path"])}
+        receipt_block = {"type": "image", "image": load_image(data_dir, row["image_path"])}
     else:
         transcript_text = _load_transcript_text(data_dir, row["transcript_path"])
         receipt_block = {"type": "text", "text": transcript_text + "\n"}
@@ -398,7 +403,7 @@ def run_agent(
     channel: str,
     fixtures: Fixtures,
     template_fn: Callable[[list[dict], list[dict]], str],
-    generate_fn: Callable[[str, list[Image.Image]], str],
+    generate_fn: Callable[[str, list[Image.Image]], tuple[str, bool]],
     config: HarnessConfig,
     data_dir: Path = DATA_DIR,
     repo_root: Path = REPO_ROOT,
@@ -406,20 +411,27 @@ def run_agent(
     """Builds the model input for row/channel, then runs up to
     MAX_ASSISTANT_TURNS assistant turns: template_fn renders the current
     message history to a prompt string, generate_fn(rendered_prompt,
-    images) returns the model's raw text for that turn (batch size 1 --
-    one row at a time). After a turn with tool calls, one tool message
-    per call is appended with a fixed mock result, and the loop continues
-    (unless the turn cap is reached); the loop stops on a turn with no
-    tool calls, or immediately on parse_failure/harness_error. Returns
-    one Section 9 record, amended per docs/phase3-deviations.md's
-    multi-turn entries: "turn" per tool call, raw_output and
-    rendered_prompts/rendered_prompt_sha256s as ordered per-turn lists,
-    and parse_failure_turn/harness_error_turn (the 1-based turn at which
-    that status occurred, or None). Tool calls from turns before a
-    parse_failure or harness_error are still returned in tool_calls --
+    images) returns (raw_text, hit_max_new_tokens) for that turn (batch
+    size 1 -- one row at a time), where hit_max_new_tokens is True iff
+    generation stopped because it reached config.max_new_tokens, not
+    because the model produced an end-of-turn token. This is recorded per
+    turn (hit_max_new_tokens_per_turn) rather than acted on here: a
+    truncated tool call reads as parse_failure, but that reflects our
+    max_new_tokens setting, not necessarily the model, so scoring/review
+    should be able to tell the two apart. After a turn with tool calls,
+    one tool message per call is appended with a fixed mock result, and
+    the loop continues (unless the turn cap is reached); the loop stops
+    on a turn with no tool calls, or immediately on
+    parse_failure/harness_error. Returns one Section 9 record, amended
+    per docs/phase3-deviations.md's multi-turn entries: "turn" per tool
+    call, raw_output and rendered_prompts/rendered_prompt_sha256s as
+    ordered per-turn lists, and parse_failure_turn/harness_error_turn
+    (the 1-based turn at which that status occurred, or None). Tool calls
+    from turns before a parse_failure are still returned in tool_calls --
     scoring (M1-M3, TASK, CO) is computed from all tool calls in valid
     turns, per the deviations log, so a real call in turn 1 is not erased
-    by a parse_failure in turn 2.
+    by a parse_failure in turn 2. A harness_error run's partial tool
+    calls are excluded from scoring instead (see phase3/score.py).
 
     Refuses before doing anything else if model_revision is invalid, or
     if row is an eval-set row without Commit B (see validate_model_revision,
@@ -442,6 +454,7 @@ def run_agent(
     rendered_prompts: list[str] = []
     rendered_prompt_sha256s: list[str] = []
     raw_outputs: list[str] = []
+    hit_max_new_tokens_per_turn: list[bool] = []
     all_tool_calls: list[dict] = []
     outcome_status = "valid"
     parse_failure_turn: int | None = None
@@ -453,14 +466,16 @@ def run_agent(
         rendered_prompt_sha256s.append(prompt_sha256_for_rendered(turn_rendered_prompt, content_sha256))
 
         try:
-            raw_output = generate_fn(turn_rendered_prompt, images)
+            raw_output, hit_max_new_tokens = generate_fn(turn_rendered_prompt, images)
         except Exception as exc:
             raw_outputs.append(f"{type(exc).__name__}: {exc}")
+            hit_max_new_tokens_per_turn.append(False)
             outcome_status = "harness_error"
             harness_error_turn = turn
             break
 
         raw_outputs.append(raw_output)
+        hit_max_new_tokens_per_turn.append(hit_max_new_tokens)
         turn_status, turn_calls = classify_outcome(raw_output, harness_error=False)
 
         if turn_status == "parse_failure":
@@ -501,6 +516,7 @@ def run_agent(
         "parse_failure_turn": parse_failure_turn,
         "harness_error_turn": harness_error_turn,
         "raw_output": raw_outputs,
+        "hit_max_new_tokens_per_turn": hit_max_new_tokens_per_turn,
         "tool_calls": all_tool_calls,
         "final_text": final_text,
         "completion_sha256": hashlib.sha256(final_text.encode("utf-8")).hexdigest(),
@@ -567,11 +583,15 @@ def build_hf_template_fn(config: HarnessConfig) -> Callable[[list[dict], list[di
     return template_fn
 
 
-def build_hf_generate_fn(config: HarnessConfig) -> Callable[[str, list[Image.Image]], str]:
+def build_hf_generate_fn(config: HarnessConfig) -> Callable[[str, list[Image.Image]], tuple[str, bool]]:
     """Batch size 1, greedy decoding (do_sample=False), as required by
     Section 3. config.model_id / config.model_revision are the only
     places the model identity is configured; nothing is run or downloaded
-    until the returned generate_fn is first called."""
+    until the returned generate_fn is first called. Returns
+    (raw_text, hit_max_new_tokens), where hit_max_new_tokens is True iff
+    the number of generated tokens equals config.max_new_tokens -- i.e.
+    generation was cut off by the token budget, not by the model
+    producing an end-of-turn token."""
     state: dict[str, Any] = {}
 
     def _ensure_loaded() -> None:
@@ -592,7 +612,7 @@ def build_hf_generate_fn(config: HarnessConfig) -> Callable[[str, list[Image.Ima
         state["model"] = model
         state["torch"] = torch
 
-    def generate_fn(rendered_prompt: str, images: list[Image.Image]) -> str:
+    def generate_fn(rendered_prompt: str, images: list[Image.Image]) -> tuple[str, bool]:
         _ensure_loaded()
         processor = state["processor"]
         model = state["model"]
@@ -602,6 +622,7 @@ def build_hf_generate_fn(config: HarnessConfig) -> Callable[[str, list[Image.Ima
         with torch.no_grad():
             output_ids = model.generate(**inputs, max_new_tokens=config.max_new_tokens, do_sample=False)
         new_tokens = output_ids[0, inputs["input_ids"].shape[1]:]
-        return decode_raw_output(new_tokens, processor.tokenizer)
+        hit_max_new_tokens = new_tokens.shape[-1] == config.max_new_tokens
+        return decode_raw_output(new_tokens, processor.tokenizer), hit_max_new_tokens
 
     return generate_fn

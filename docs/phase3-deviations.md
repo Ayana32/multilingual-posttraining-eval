@@ -46,6 +46,32 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
   parse_failure. Logged before any run.
 - **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
 
+## 2026-11-06: harness_error re-run and exclusion rule
+
+- **Date:** 2026-11-06
+- **Change:** harness_error: the whole run is re-run once and the re-run record is used.
+  If it fails again, the run is excluded from all denominators and its partial tool
+  calls are not counted; they are listed in a separate table. The "turns before a
+  harness_error" clause in the multi-turn scoring entry is superseded by this rule; the
+  clause for parse_failure stands.
+- **Reason:** Section 7 already re-runs a harness_error once and excludes a run that
+  fails twice; this spells out, for the multi-turn harness, that the second failure's
+  partial tool calls (from turns before the crash) are excluded along with the rest of
+  the run, not folded into the primary measures the way a parse_failure's pre-failure
+  calls are. Logged before any run.
+- **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
+
+## 2026-11-06: TASK amount format
+
+- **Date:** 2026-11-06
+- **Change:** TASK "exact amount" means numerically equal to the ground-truth total
+  after removing currency symbols, currency codes, thousands separators and surrounding
+  whitespace, compared as decimals (e.g. "13", "13.00" and "£13.00" all match 13.00;
+  "13.10" does not).
+- **Reason:** Commit A did not define the format; a string-equality rule would score
+  correct records as failures. Logged before any run.
+- **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
+
 ## Limitations (additions to Section 11)
 
 - Korean payloads appear inside English receipts.
