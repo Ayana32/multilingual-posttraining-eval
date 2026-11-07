@@ -72,6 +72,35 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
   correct records as failures. Logged before any run.
 - **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
 
+## 2026-11-07: model_revision recorded per record, not in environment.json
+
+- **Date:** 2026-11-07
+- **Change:** `model_revision` (and `model_id`) are recorded on every record in
+  `records.jsonl`, and in `phase3/config.yaml`'s `model_revision` field. They are
+  not keys in the run-level `environment.json` that `harness.start_run` writes
+  (that file records the Python/torch/transformers/CUDA/GPU environment, plus
+  `git_commit`/`git_dirty`/`pip_freeze` -- the code version, not the model's).
+- **Reason:** Section 9 says: *"Each record in `records.jsonl` contains:"* followed
+  by a field list including `model_id, model_revision, prompt_sha256,` -- i.e.
+  every record carries them, not the run-level environment file. This just
+  confirms where to look, since a reviewer checking only `environment.json`
+  would not find them there. Logged before any R_eval run.
+- **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
+
+## 2026-11-07: text channel reproduces the image's line breaks
+
+- **Date:** 2026-11-07
+- **Change:** The text channel's transcript wraps at the same points as the
+  rendered image, so the injection line appears wrapped over multiple lines
+  (e.g. 3 lines for P1 EN) in the text prompt the model sees, not as one
+  unbroken sentence.
+- **Reason:** Section 4.3 says the transcript is *"generated from the same
+  source as the image, not by OCR"* and matches it *"line by line"*, but does
+  not separately state that line breaks (specifically) are reproduced --
+  stating it explicitly here, since it's a visible property of every text-
+  channel prompt. Logged before any R_eval run.
+- **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
+
 ## Limitations (additions to Section 11)
 
 - Korean payloads appear inside English receipts.

@@ -21,10 +21,23 @@ deviations log (`docs/phase3-deviations.md`).
   git checkout <commit>   # e.g. ebd4030, the harness-code commit -- see the
                           # correction note below for what this hash is NOT
   ```
-- The image ships torch already installed; `pip install -e ".[dev,phase3,hf]"`
-  plus a pinned `transformers==4.57.1` (see `phase3/config.yaml`) is layered on
-  top of it, run from inside `/root/repo`. No venv: installing into the
-  image's system Python avoids re-downloading torch.
+- The image ships torch already installed. Install, in this exact order,
+  from inside `/root/repo` (no venv: installing into the image's system
+  Python avoids re-downloading torch):
+  ```bash
+  pip install -e ".[dev,phase3,hf]"
+  pip install transformers==4.57.1 hf_transfer
+  ```
+  **The second line is not optional.** `pyproject.toml`'s `hf` extra pins
+  only `transformers>=4.45`, so the first line alone resolves to whatever
+  the latest release is -- on both the gates pod and the phrase-selection
+  pod this installed **transformers 5.22.x first**, and only the explicit
+  second `pip install transformers==4.57.1 hf_transfer` line downgraded it
+  to the frozen `4.57.1` (see `phase3/config.yaml` and
+  `docs/phase3-commit-b.md`). Skipping the second line means R_eval runs on
+  a different serving stack than the one P1 was tuned and gated on -- see
+  the pre-flight check in the R_eval chunk plan below, which exists
+  specifically to catch this before chunk_01 runs.
 - `pip install -e .` creates `src/mpe.egg-info/` inside the repo; this is
   already covered by `.gitignore`'s `*.egg-info/` entry, confirmed locally
   by cloning this repo fresh, running `pip install -e .`, and checking
@@ -137,6 +150,162 @@ then copied from there into the committed `report/phase3_gate_report.json`
 and `report/phase3_gate_artifacts/` (with the on-pod `/root/repo/...` paths
 inside the JSON rewritten to be repo-relative). All four gates passed
 (2026-11-06).
+
+## R_eval chunk plan (added 2026-11-07, before Commit B's R_eval runs)
+
+`phase3/run.py` has no resume capability, and `harness.write_records` opens
+its output file with `"w"` (truncate) and writes everything once at the end
+-- a crash partway through a run loses that run's records, and a re-run of
+the same command overwrites the file rather than picking up where it left
+off (confirmed by reading `phase3/run.py::main` and
+`phase3/harness.py::write_records`; neither reads an existing `records.jsonl`
+first). So R_eval runs in chunks, each a separate `run.py` invocation with
+its own `--out-dir`, small enough that losing one chunk to a crash is cheap
+to redo.
+
+**Eval set** (`phase3/data/manifest.jsonl`, `receipt_set == "eval"`): 20
+receipts (`eval_01`-`eval_20`), 7 variants each (`clean`, `neutral_en`,
+`neutral_ko`, `P1_en`, `P1_ko`, `P2_en`, `P2_ko`). R_eval only runs the
+**frozen** phrasing (P1, see `docs/phase3-commit-b.md`) -- `P2_en`/`P2_ko`
+are in the manifest (generated for every receipt, for G3 review) but must
+be excluded from every command below with an explicit `--variants` list.
+
+Per Section 4.4's run table, scaled to `n_eval_receipts = 20`: 10 agent runs
+per receipt (2 `clean` + 4 `neutral` + 4 `inject`[P1] over 2 channels) x 20
+receipts = **200 agent runs**; 4 transcription runs per receipt (`neutral_en`,
+`neutral_ko`, `P1_en`, `P1_ko` -- images with an extra line) x 20 = **80
+transcription runs**.
+
+### Pre-flight (before chunk_01)
+
+The launcher script below (`run_all_chunks.sh`) runs this same check as its
+first step and exits without running any chunk if it fails. Running it by
+hand too, right after the install steps in the "Pod" section above, just
+gives an earlier/faster signal than waiting for the launcher. It must print
+`PRE-FLIGHT OK`; if it doesn't, stop and fix the install (most likely: the
+`pip install transformers==4.57.1 hf_transfer` line was skipped or
+something later re-pulled a different version) before running anything:
+
+```bash
+python3 -c "
+import torch, transformers
+print('torch:', torch.__version__)
+print('transformers:', transformers.__version__)
+assert torch.__version__ == '2.8.0+cu128', f'torch mismatch: {torch.__version__} != 2.8.0+cu128 (frozen record)'
+assert transformers.__version__ == '4.57.1', f'transformers mismatch: {transformers.__version__} != 4.57.1 (frozen record)'
+print('PRE-FLIGHT OK')
+"
+```
+
+This exists because both the gates pod and the phrase-selection pod
+installed transformers 5.22.x on `pip install -e ".[dev,phase3,hf]"` alone
+(the `hf` extra only pins `transformers>=4.45`), and only the second,
+explicit pin corrected it -- if a chunk run skipped that step, R_eval would
+run on a different serving stack than what P1 was tuned and gated on,
+silently.
+
+### Chunks
+
+8 agent chunks of exactly 25 records each (5 receipts x 5 variants x 1
+channel), partitioned by receipt-id group and channel so there is no
+overlap; 2 transcription chunks of 40 each (10 receipts x 4 payload-bearing
+variants), split the same way the agent chunks are, so no single chunk is
+much larger than another. Every chunk gets its own `--out-dir`; never reuse
+one.
+
+| chunk | receipt_ids | channel | variants | n |
+|---|---|---|---|---|
+| chunk_01 | eval_01-eval_05 | image | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_02 | eval_01-eval_05 | text | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_03 | eval_06-eval_10 | image | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_04 | eval_06-eval_10 | text | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_05 | eval_11-eval_15 | image | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_06 | eval_11-eval_15 | text | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_07 | eval_16-eval_20 | image | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_08 | eval_16-eval_20 | text | clean,neutral_en,neutral_ko,P1_en,P1_ko | 25 |
+| chunk_transcription_01 | eval_01-eval_10 | n/a | neutral_en,neutral_ko,P1_en,P1_ko | 40 |
+| chunk_transcription_02 | eval_11-eval_20 | n/a | neutral_en,neutral_ko,P1_en,P1_ko | 40 |
+
+### Launcher: run all chunks in order, log exit codes, continue on failure
+
+A single launcher script runs every chunk in sequence, logs each chunk's
+exit code to `/root/logs/chunk_status.log`, and **continues to the next
+chunk even if one fails** (so one bad chunk doesn't block the other nine).
+Per-chunk stdout/stderr still goes to its own log file under `/root/logs/`,
+**outside** the repo, so `git_is_dirty` stays `False` the same way it did
+for phrase selection.
+
+```bash
+cat > /root/run_all_chunks.sh <<'SCRIPT_EOF'
+#!/bin/bash
+cd /root/repo
+mkdir -p /root/logs
+STATUS_LOG=/root/logs/chunk_status.log
+: > "$STATUS_LOG"
+
+python3 -c "
+import torch, transformers
+print('torch:', torch.__version__)
+print('transformers:', transformers.__version__)
+assert torch.__version__ == '2.8.0+cu128', f'torch mismatch: {torch.__version__} != 2.8.0+cu128 (frozen record)'
+assert transformers.__version__ == '4.57.1', f'transformers mismatch: {transformers.__version__} != 4.57.1 (frozen record)'
+print('PRE-FLIGHT OK')
+"
+if [ $? -ne 0 ]; then
+  echo "PRE-FLIGHT FAILED: not running any chunk" >&2
+  exit 1
+fi
+
+run_chunk() {
+  local name="$1"; shift
+  python3 phase3/run.py "$@" > "/root/logs/${name}.log" 2>&1
+  echo "${name} exit_code=$?" >> "$STATUS_LOG"
+}
+
+run_chunk chunk_01 --receipt-set eval --channels image --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_01,eval_02,eval_03,eval_04,eval_05 --out-dir results/phase3/eval/chunk_01
+run_chunk chunk_02 --receipt-set eval --channels text  --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_01,eval_02,eval_03,eval_04,eval_05 --out-dir results/phase3/eval/chunk_02
+run_chunk chunk_03 --receipt-set eval --channels image --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_06,eval_07,eval_08,eval_09,eval_10 --out-dir results/phase3/eval/chunk_03
+run_chunk chunk_04 --receipt-set eval --channels text  --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_06,eval_07,eval_08,eval_09,eval_10 --out-dir results/phase3/eval/chunk_04
+run_chunk chunk_05 --receipt-set eval --channels image --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_11,eval_12,eval_13,eval_14,eval_15 --out-dir results/phase3/eval/chunk_05
+run_chunk chunk_06 --receipt-set eval --channels text  --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_11,eval_12,eval_13,eval_14,eval_15 --out-dir results/phase3/eval/chunk_06
+run_chunk chunk_07 --receipt-set eval --channels image --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_16,eval_17,eval_18,eval_19,eval_20 --out-dir results/phase3/eval/chunk_07
+run_chunk chunk_08 --receipt-set eval --channels text  --variants clean,neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_16,eval_17,eval_18,eval_19,eval_20 --out-dir results/phase3/eval/chunk_08
+
+run_chunk chunk_transcription_01 --receipt-set eval --variants neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_01,eval_02,eval_03,eval_04,eval_05,eval_06,eval_07,eval_08,eval_09,eval_10 --out-dir results/phase3/eval/chunk_transcription_01 --transcription
+run_chunk chunk_transcription_02 --receipt-set eval --variants neutral_en,neutral_ko,P1_en,P1_ko --receipt-ids eval_11,eval_12,eval_13,eval_14,eval_15,eval_16,eval_17,eval_18,eval_19,eval_20 --out-dir results/phase3/eval/chunk_transcription_02 --transcription
+
+cat "$STATUS_LOG"
+SCRIPT_EOF
+chmod +x /root/run_all_chunks.sh
+nohup bash /root/run_all_chunks.sh > /root/logs/run_all_chunks.log 2>&1 &
+disown
+```
+
+After it finishes, check `/root/logs/chunk_status.log` for any
+`exit_code != 0`. **Retry only those chunks**, individually, into a
+**fresh** `--out-dir` (e.g. `chunk_03_retry`, never reuse `chunk_03`), and
+note in the merge step which directory (original or retry) is the one
+actually used -- the failed partial directory is left in place for the
+record, just excluded from the merge.
+
+Each chunk writes its own `environment.json` (via `harness.start_run`), so
+every check below runs per chunk, not just once -- catching a mid-sequence
+edit, an accidental dirty tree, or a version drift on any single chunk.
+
+### Merge check (run once, after all 10 chunks, using each chunk's final --out-dir -- original or retry)
+
+1. `sum(len(records.jsonl) for chunk_01..chunk_08) == 200`.
+2. `len(chunk_transcription_01/transcription_records.jsonl) + len(chunk_transcription_02/transcription_records.jsonl) == 80`.
+3. No duplicate `(receipt_id, variant, channel)` triple across chunk_01-08's
+   combined agent records (each should appear exactly once).
+4. Every chunk's `environment.json` matches the frozen record
+   (`docs/phase3-commit-b.md`) on:
+   - `git_commit` == the Commit B commit hash (check with
+     `git rev-parse phase3-prereg-B`),
+   - `git_dirty` == `false`,
+   - `transformers_version` == `"4.57.1"`,
+   - `torch_version` == `"2.8.0+cu128"`,
+   - `gpu_name` == `"NVIDIA A40"`.
 
 ## Correction (added 2026-11-06, after commit 835a833)
 

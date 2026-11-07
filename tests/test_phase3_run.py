@@ -270,11 +270,13 @@ def test_load_config_reads_phase3_config_yaml():
     config = run_module.load_config()
     assert config.model_id
     assert config.max_new_tokens > 0
-    assert config.commit_b_tag is False
 
-    # model_revision is pinned to a real Qwen3-VL-8B-Instruct commit hash
-    # (Day 3b-2), so it must pass validate_model_revision -- this is not
-    # yet Commit B (Section 6.3), which still needs phrase selection.
+    # commit_b_tag is true as of Commit B (Section 6.3; phrase selection
+    # froze P1 on R_tune with M2 = 3/3 -- see docs/phase3-commit-b.md).
+    assert config.commit_b_tag is True
+
+    # model_revision is pinned to a real Qwen3-VL-8B-Instruct commit hash,
+    # so it must pass validate_model_revision.
     hz.validate_model_revision(config.model_revision)
 
 

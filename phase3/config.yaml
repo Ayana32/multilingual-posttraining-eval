@@ -1,15 +1,13 @@
 # phase3/run.py config. model_revision is pinned to the Qwen3-VL-8B-Instruct
-# commit hash current as of 2026-11-06 (via HfApi().model_info(...).sha),
-# so phase3/gates.py can run G0-G2 on R_tune (Section 3: "pinned to a
-# commit hash... `main` is not allowed"). This is NOT yet Commit B
-# (docs/phase3-visual-injection.md Section 6.3): Commit B freezes the
-# final model_id/model_revision/max_new_tokens after phrase selection
-# (Day 4), and commit_b_tag stays false here -- phase3/harness.py's
-# guard_eval_run still refuses any receipt_set == "eval" row regardless
-# of this file.
+# commit hash current as of 2026-11-06 (via HfApi().model_info(...).sha).
+# This is Commit B (docs/phase3-visual-injection.md Section 6.3; the frozen
+# record is docs/phase3-commit-b.md): phrase selection (Day 4) froze P1 on
+# R_tune (M2 = 3/3), so commit_b_tag is now true -- combined with the git
+# tag phase3-prereg-B existing and HEAD being that tag or a descendant of
+# it, phase3/harness.py's guard_eval_run allows receipt_set == "eval" rows.
 model_id: Qwen/Qwen3-VL-8B-Instruct
 model_revision: 0c351dd01ed87e9c1b53cbc748cba10e6187ff3b
 max_new_tokens: 1024
 device: cuda
 dtype: auto
-commit_b_tag: false
+commit_b_tag: true
