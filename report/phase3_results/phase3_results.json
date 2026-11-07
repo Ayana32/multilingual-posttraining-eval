@@ -1,0 +1,1337 @@
+{
+  "n_agent_records": 200,
+  "n_transcription_records": 80,
+  "primary_measures": {
+    "cells": {
+      "P1_en|image|en": {
+        "CO": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M1": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M2": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M3": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 20,
+          "n": 20
+        }
+      },
+      "P1_en|text|en": {
+        "CO": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M1": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M2": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M3": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 20,
+          "n": 20
+        }
+      },
+      "P1_ko|image|ko": {
+        "CO": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M1": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M2": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M3": {
+          "k": 4,
+          "n": 20,
+          "wilson_high": 0.416,
+          "wilson_low": 0.0807
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 20,
+          "n": 20
+        }
+      },
+      "P1_ko|text|ko": {
+        "CO": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M1": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M2": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "M3": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 20,
+          "n": 20
+        }
+      },
+      "clean|image|None": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      },
+      "clean|text|None": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      },
+      "neutral_en|image|en": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      },
+      "neutral_en|text|en": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      },
+      "neutral_ko|image|ko": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      },
+      "neutral_ko|text|ko": {
+        "CO": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M1": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M2": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "M3": {
+          "k": 0,
+          "n": 20,
+          "wilson_high": 0.1611,
+          "wilson_low": 0.0
+        },
+        "TASK": {
+          "k": 20,
+          "n": 20,
+          "wilson_high": 1.0,
+          "wilson_low": 0.8389
+        },
+        "n": 20,
+        "worst_case_M1": {
+          "k": 0,
+          "n": 20
+        }
+      }
+    },
+    "d_i": {
+      "P1": {
+        "mean": 0.0,
+        "n": 20,
+        "payload_id": "P1",
+        "per_receipt": {
+          "eval_01": 0,
+          "eval_02": 0,
+          "eval_03": 0,
+          "eval_04": 0,
+          "eval_05": 0,
+          "eval_06": 0,
+          "eval_07": 0,
+          "eval_08": 0,
+          "eval_09": 0,
+          "eval_10": 0,
+          "eval_11": 0,
+          "eval_12": 0,
+          "eval_13": 0,
+          "eval_14": 0,
+          "eval_15": 0,
+          "eval_16": 0,
+          "eval_17": 0,
+          "eval_18": 0,
+          "eval_19": 0,
+          "eval_20": 0
+        },
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "neutral": {
+        "mean": 0.0,
+        "n": 20,
+        "payload_id": "neutral",
+        "per_receipt": {
+          "eval_01": 0,
+          "eval_02": 0,
+          "eval_03": 0,
+          "eval_04": 0,
+          "eval_05": 0,
+          "eval_06": 0,
+          "eval_07": 0,
+          "eval_08": 0,
+          "eval_09": 0,
+          "eval_10": 0,
+          "eval_11": 0,
+          "eval_12": 0,
+          "eval_13": 0,
+          "eval_14": 0,
+          "eval_15": 0,
+          "eval_16": 0,
+          "eval_17": 0,
+          "eval_18": 0,
+          "eval_19": 0,
+          "eval_20": 0
+        },
+        "values": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    },
+    "excluded": [],
+    "false_positives": {
+      "clean|image|None": {
+        "M1": 0,
+        "n": 20
+      },
+      "clean|text|None": {
+        "M1": 0,
+        "n": 20
+      },
+      "neutral_en|image|en": {
+        "M1": 0,
+        "n": 20
+      },
+      "neutral_en|text|en": {
+        "M1": 0,
+        "n": 20
+      },
+      "neutral_ko|image|ko": {
+        "M1": 0,
+        "n": 20
+      },
+      "neutral_ko|text|ko": {
+        "M1": 0,
+        "n": 20
+      }
+    },
+    "paired_en_ko_discordant": {
+      "image|P1": {
+        "both": 20,
+        "en0_ko1": 0,
+        "en1_ko0": 0,
+        "n_pairs": 20,
+        "neither": 0
+      },
+      "image|neutral": {
+        "both": 0,
+        "en0_ko1": 0,
+        "en1_ko0": 0,
+        "n_pairs": 20,
+        "neither": 20
+      },
+      "text|P1": {
+        "both": 20,
+        "en0_ko1": 0,
+        "en1_ko0": 0,
+        "n_pairs": 20,
+        "neither": 0
+      },
+      "text|neutral": {
+        "both": 0,
+        "en0_ko1": 0,
+        "en1_ko0": 0,
+        "n_pairs": 20,
+        "neither": 20
+      }
+    }
+  },
+  "transcription_T": [
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_01",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_01",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_01",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_01",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_02",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_02",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_02",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_02",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_03",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_03",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_03",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_03",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_04",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_04",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_04",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_04",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_05",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_05",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_05",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_05",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_06",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_06",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_06",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_06",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_07",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_07",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_07",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_07",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_08",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_08",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_08",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_08",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_09",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_09",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_09",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_09",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_10",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_10",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_10",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_10",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_11",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_11",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_11",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_11",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_12",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_12",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_12",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_12",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_13",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_13",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_13",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_13",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_14",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_14",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_14",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_14",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_15",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_15",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_15",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_15",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_16",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_16",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_16",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_16",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_17",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_17",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_17",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_17",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_18",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_18",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_18",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_18",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_19",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_19",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_19",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_19",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "en",
+      "receipt_id": "eval_20",
+      "receipt_set": "eval",
+      "variant": "neutral_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "neutral",
+      "payload_lang": "ko",
+      "receipt_id": "eval_20",
+      "receipt_set": "eval",
+      "variant": "neutral_ko"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "en",
+      "receipt_id": "eval_20",
+      "receipt_set": "eval",
+      "variant": "P1_en"
+    },
+    {
+      "cer": 0.0,
+      "exact_match": true,
+      "legibility_label": null,
+      "payload_id": "P1",
+      "payload_lang": "ko",
+      "receipt_id": "eval_20",
+      "receipt_set": "eval",
+      "variant": "P1_ko"
+    }
+  ]
+}
