@@ -336,6 +336,22 @@ edit, an accidental dirty tree, or a version drift on any single chunk.
   `report/phase3_eval/SHA256SUMS` and the per-chunk files there for the
   raw records; M1-M3/TASK/CO have not been scored yet.
 
+## Checking CI for a commit (added 2026-11-07)
+
+`gh run list` on its own, or filtered by branch, can miss a run that matters.
+When checking CI for a specific commit, use:
+
+```
+gh run list --commit <full 40-char hash>
+```
+
+This lists **every** run for that commit, including ones triggered by a tag
+push, not just the latest branch-triggered run. A tag push and the branch
+push that contains the same commit can produce two different CI outcomes for
+identical code -- see the `phase3-prereg-B` tag-push CI failure in
+`docs/phase3-deviations.md` (2026-11-07 entry), which was missed at the time
+because only the main-branch run had been checked.
+
 ## Correction (added 2026-11-06, after commit 835a833)
 
 Commit 835a833's message says "Qwen3-VL-8B-Instruct @ ebd4030". `ebd4030` is

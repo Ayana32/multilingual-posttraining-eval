@@ -101,6 +101,46 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
   channel prompt. Logged before any R_eval run.
 - **Applies from:** the commit that adds this entry (see `git log -- docs/phase3-deviations.md`).
 
+## 2026-11-07: CI failure on the phase3-prereg-B tag push
+
+- **Date:** 2026-11-07
+- **Note (not a design change):** The CI run triggered by pushing the
+  `phase3-prereg-B` tag (run 42377165443, 2026-11-07 13:29 UTC) failed.
+  The tag itself is correct and is not being moved or recreated because of
+  this -- `git rev-parse phase3-prereg-B` is still
+  `31a0c6785edec6f3234c0fbe77ae0405c871be8b`, the intended Commit B commit.
+  This entry exists so a red X on that tag's CI run doesn't need
+  re-investigating later.
+- **Cause:** `tests/test_phase3_harness.py::test_guard_refuses_eval_row_when_tag_does_not_exist_yet`,
+  as it existed at that commit, asserted `not hz.commit_b_tag_exists(REPO_ROOT)`
+  against this project's own repo. A tag-triggered checkout
+  (`actions/checkout@v4` checking out the pushed tag ref) fetches that one
+  tag along with it, even though the workflow sets no `fetch-tags: true`
+  -- so the tag *was* present in that specific checkout, and the assertion
+  failed:
+  ```
+  >       assert not hz.commit_b_tag_exists(REPO_ROOT)
+  E       AssertionError: assert not True
+  ```
+  (`tests/test_phase3_harness.py:558`, from run 42377165443's log). The
+  full run log confirms this was the only failure: `1 failed, 409 passed,
+  1 skipped, 8 deselected`. The CI run for the **same commit** triggered by
+  the push to `main` (run 42377017338, 13:27 UTC) passed, since a branch
+  checkout fetches no tags at all. R_eval was started (13:35 UTC) without
+  this tag-push CI result being noticed.
+- **Scope:** the failure was in this one test only. No harness, run, or
+  guard code (`phase3/harness.py`, `phase3/run.py`,
+  `guard_eval_run`/`commit_b_tag_exists`/`head_is_commit_b_or_descendant`)
+  was affected, and R_eval's results are unaffected.
+- **Fixed in** `57b7f220d7dd678d8ac3d7b2d9e9f2c37efcae85`: the test now runs
+  against an isolated `tmp_path` git repo with no `phase3-prereg-B` tag at
+  all, instead of reading this repo's own tag state, so it no longer
+  depends on how a given CI run was triggered. Verified both ways: it
+  passes in this local repo, which has the `phase3-prereg-B` tag, and in a
+  `git clone --depth 1 --no-tags` copy, which has no tags.
+- **Applies from:** the commit that adds this entry (see
+  `git log -- docs/phase3-deviations.md`).
+
 ## Limitations (additions to Section 11)
 
 - Korean payloads appear inside English receipts.
