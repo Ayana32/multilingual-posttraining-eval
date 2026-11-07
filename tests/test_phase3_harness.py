@@ -552,13 +552,23 @@ def test_guard_refuses_eval_row_when_commit_b_tag_flag_unset():
         hz.guard_eval_run(row, commit_b_tag=False, repo_root=REPO_ROOT)
 
 
-def test_guard_refuses_eval_row_when_tag_does_not_exist_yet():
-    # phase3-prereg-B has not been created yet (that is Commit B, Day 4),
-    # so even with the flag set, the guard must still refuse.
-    assert not hz.commit_b_tag_exists(REPO_ROOT)
+def test_guard_refuses_eval_row_when_tag_does_not_exist_yet(tmp_path):
+    # Exercised against an isolated throwaway repo with no phase3-prereg-B
+    # tag at all, not this project's own repo: the real repo now has that
+    # tag (Commit B, Day 4), and CI's checkout doesn't fetch tags at all
+    # (actions/checkout@v4 default, no fetch-tags: true in ci.yml) -- so a
+    # version of this test that reads the real repo's tag state would pass
+    # locally and fail (or silently stop testing the refusal path) in CI,
+    # depending on which way the real repo's tags happen to point.
+    _init_temp_git_repo(tmp_path, dirty=False)
+    assert not hz.commit_b_tag_exists(tmp_path)
     row = {"receipt_set": "eval"}
-    with pytest.raises(hz.EvalGuardError):
-        hz.guard_eval_run(row, commit_b_tag=True, repo_root=REPO_ROOT)
+    # match= pins this to the "tag was not found" refusal specifically,
+    # not just any EvalGuardError -- e.g. not the commit_b_tag-flag-unset
+    # or the not-a-descendant refusal, which raise the same exception type
+    # for a different reason.
+    with pytest.raises(hz.EvalGuardError, match=re.escape(f"the git tag '{hz.COMMIT_B_TAG}' was not found")):
+        hz.guard_eval_run(row, commit_b_tag=True, repo_root=tmp_path)
 
 
 # ---------------------------------------------------------------------------

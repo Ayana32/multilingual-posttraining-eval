@@ -277,9 +277,17 @@ run_chunk chunk_transcription_02 --receipt-set eval --variants neutral_en,neutra
 cat "$STATUS_LOG"
 SCRIPT_EOF
 chmod +x /root/run_all_chunks.sh
+mkdir -p /root/logs
 nohup bash /root/run_all_chunks.sh > /root/logs/run_all_chunks.log 2>&1 &
 disown
 ```
+
+`mkdir -p /root/logs` must run before the `nohup` line: the outer `>
+/root/logs/run_all_chunks.log` redirect needs that directory to already
+exist, and the script only creates it *inside itself* (too late for the
+redirect). On the first R_eval launch attempt (2026-11-07), this line was
+missing and the launch failed immediately with no chunk ever running; it
+was added by hand before the (successful) relaunch.
 
 After it finishes, check `/root/logs/chunk_status.log` for any
 `exit_code != 0`. **Retry only those chunks**, individually, into a
@@ -306,6 +314,27 @@ edit, an accidental dirty tree, or a version drift on any single chunk.
    - `transformers_version` == `"4.57.1"`,
    - `torch_version` == `"2.8.0+cu128"`,
    - `gpu_name` == `"NVIDIA A40"`.
+
+## R_eval run log (2026-11-07)
+
+- **Pod:** `qptjbw6pg6db19` (A40, Secure Cloud, 100 GB disk -- bumped up
+  from the gates/phrase-selection pods' 60 GB for this run), terminated
+  after results were pulled back and verified.
+- **Started:** 2026-11-07 13:35:55 UTC (second launch attempt, after
+  adding `mkdir -p /root/logs`; the first attempt's exact failure time
+  wasn't logged separately, but it never got past the redirect error --
+  see the correction above the launcher script).
+- **Ended:** finished between 13:41 and 14:36 UTC (at 14:36 I checked
+  `chunk_status.log` in the RunPod web terminal and all 10 chunks showed
+  `exit_code=0`).
+- **Result:** all 10 chunks `exit_code=0`; 200/200 agent records
+  `outcome_status == "valid"` (no `parse_failure`, no `harness_error`);
+  0/200 agent records and 0/80 transcription records ever hit
+  `max_new_tokens`; merge check (record counts, no duplicate
+  `(receipt_id, variant, channel)`, every chunk's `environment.json`
+  matching the frozen record) passed in full. See
+  `report/phase3_eval/SHA256SUMS` and the per-chunk files there for the
+  raw records; M1-M3/TASK/CO have not been scored yet.
 
 ## Correction (added 2026-11-06, after commit 835a833)
 
