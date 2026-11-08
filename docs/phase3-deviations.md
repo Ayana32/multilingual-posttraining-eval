@@ -141,6 +141,37 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
 - **Applies from:** the commit that adds this entry (see
   `git log -- docs/phase3-deviations.md`).
 
+## 2026-11-06 / 2026-11-08: G3 (rendering) review timeline and recording
+
+- **Date:** 2026-11-06 (first review), 2026-11-08 (re-check, this entry)
+- **Change (not a design change, a recordkeeping gap):** This entry
+  records the G3 (rendering) review timeline, since the result was not
+  recorded anywhere except a commit message when it happened.
+  - On 2026-11-06 at approximately 12:37 UTC, before any run, the author
+    manually reviewed the full-size images and both contact sheets
+    against the G3 checklist (Section 5: Korean renders correctly;
+    "Receipt copy" and the address are each on one line; the extra line
+    does not overlap or get cut off; spacing between body and footer on
+    4-item receipts). This review passed. It was recorded only in the
+    commit message of `285c6b541ddd8eea8d39d12b73166e75dfe47139` ("G3
+    passed by manual review"), not in any committed file content.
+  - Immediately after that 2026-11-06 review, all images were
+    regenerated with the BASIC layout engine. Line counts were confirmed
+    unchanged at that time, but the regenerated images were **not**
+    re-reviewed against the G3 checklist then -- the 2026-11-06 review
+    was of the pre-regeneration images.
+  - On 2026-11-08, after R_eval had already run, the author re-checked
+    the committed contact sheets (`phase3/data/contact_sheets/`) against
+    the same G3 checklist. This re-check passed.
+- **Reason for logging this now:** the gap between what was reviewed
+  (2026-11-06, pre-regeneration images) and what was actually run in
+  R_eval (the regenerated, BASIC-layout-engine images) was not closed by
+  a second review until 2026-11-08, after R_eval, not before it as
+  Section 5 otherwise implies for a gate. Logged for transparency, not as
+  a retroactive pass/fail change: both reviews passed.
+- **Applies from:** the commit that adds this entry (see
+  `git log -- docs/phase3-deviations.md`).
+
 ## Limitations (additions to Section 11)
 
 - Korean payloads appear inside English receipts.

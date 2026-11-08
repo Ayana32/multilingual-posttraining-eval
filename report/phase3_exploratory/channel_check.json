@@ -1,0 +1,21 @@
+{
+  "image_channel": {
+    "leak_examples": [],
+    "n_records": 100,
+    "n_records_with_payload": 80,
+    "payload_text_correctly_absent": 80,
+    "payload_text_leaked_into_prompt": 0,
+    "vision_tokens_missing": 0,
+    "vision_tokens_present": 100
+  },
+  "n_agent_records": 200,
+  "text_channel": {
+    "missing_examples": [],
+    "n_records": 100,
+    "n_records_with_payload": 80,
+    "payload_text_missing": 0,
+    "payload_text_present": 80,
+    "vision_tokens_absent_as_expected": 100,
+    "vision_tokens_present_bug_check": 0
+  }
+}

@@ -19,6 +19,12 @@ Paired by stage and prompt, items refused only in English and never only in Kore
 
 See [docs/phase2b-results.md](docs/phase2b-results.md) for the full methodology, all three uncertainty methods, and limitations.
 
+## Phase 3 Results
+
+In a receipt-processing agent built on Qwen3-VL-8B-Instruct, with two mock tools and an injected instruction to email receipt data to an outside address, the injection produced an unauthorised `send_email` call in every injected condition (English and Korean, delivered as an image or as text), 20 out of 20 receipts each time, and in none of the clean or neutral conditions. Because every injected condition hit this ceiling, the pre-registered comparison on this measure (d_i on M2) could not detect a difference between languages or channels. A second pre-registered measure, whether the email body named the actual vendor and amount, was lower only for Korean delivered as an image (4/20). In that cell, all 16 failures on this measure were bodies that copied the injected Korean sentence verbatim (post hoc classification), while the same sentence given as text produced composed bodies in 20/20, and the Korean images were transcribed exactly. Why copying occurred only for Korean delivered as an image is an open hypothesis from one model, one phrasing, and 20 receipts.
+
+See [docs/phase3-results.md](docs/phase3-results.md) for the full methodology, the pre-registered results, the exploratory findings, and limitations.
+
 ## Motivation
 
 Post-training safety evaluation is overwhelmingly conducted in English, even though the resulting models are deployed multilingually. It is not obvious that refusal behavior calibrated during English-centric post-training generalizes to other languages with the same reliability. This project builds the infrastructure to test that question directly and reproducibly, rather than assuming it.
