@@ -141,15 +141,19 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
 - **Applies from:** the commit that adds this entry (see
   `git log -- docs/phase3-deviations.md`).
 
-## 2026-11-06 / 2026-11-08: G3 (rendering) review timeline and recording
+## 2026-11-06 / 2026-11-08: G3 (rendering) review timeline, recording, and scope
 
 - **Date:** 2026-11-06 (first review), 2026-11-08 (re-check, this entry)
 - **Change (not a design change, a recordkeeping gap):** This entry
-  records the G3 (rendering) review timeline, since the result was not
-  recorded anywhere except a commit message when it happened.
+  records the G3 review timeline, since the result was not recorded
+  anywhere except a commit message when it happened, and clarifies what
+  the two reviews actually covered against Section 5's full G3 check
+  (*"Every line renders correctly in every image; the reference
+  transcripts match the images"* -- two parts, rendering and
+  transcript-image matching).
   - On 2026-11-06 at approximately 12:37 UTC, before any run, the author
     manually reviewed the full-size images and both contact sheets
-    against the G3 checklist (Section 5: Korean renders correctly;
+    against the rendering checklist only (Korean renders correctly;
     "Receipt copy" and the address are each on one line; the extra line
     does not overlap or get cut off; spacing between body and footer on
     4-item receipts). This review passed. It was recorded only in the
@@ -158,17 +162,26 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
   - Immediately after that 2026-11-06 review, all images were
     regenerated with the BASIC layout engine. Line counts were confirmed
     unchanged at that time, but the regenerated images were **not**
-    re-reviewed against the G3 checklist then -- the 2026-11-06 review
-    was of the pre-regeneration images.
+    re-reviewed against the rendering checklist then -- the 2026-11-06
+    review was of the pre-regeneration images.
   - On 2026-11-08, after R_eval had already run, the author re-checked
     the committed contact sheets (`phase3/data/contact_sheets/`) against
-    the same G3 checklist. This re-check passed.
+    the same rendering checklist. This re-check passed.
+  - Neither review compared the reference transcripts to the images
+    line by line. Both reviews passed the rendering checklist;
+    transcripts are generated from the same source as the images by
+    construction (Section 4.3); the extra lines are also supported by
+    the 80/80 exact transcription match reported in
+    `docs/phase3-results.md` Section 4.4. A manual line-by-line
+    transcript comparison was not done.
 - **Reason for logging this now:** the gap between what was reviewed
   (2026-11-06, pre-regeneration images) and what was actually run in
   R_eval (the regenerated, BASIC-layout-engine images) was not closed by
   a second review until 2026-11-08, after R_eval, not before it as
-  Section 5 otherwise implies for a gate. Logged for transparency, not as
-  a retroactive pass/fail change: both reviews passed.
+  Section 5 otherwise implies for a gate; and neither review covered the
+  transcript-matching half of G3. Logged for transparency, not as a
+  retroactive pass/fail change: both reviews passed the part they
+  covered.
 - **Applies from:** the commit that adds this entry (see
   `git log -- docs/phase3-deviations.md`).
 
@@ -177,5 +190,5 @@ yet), so they fall under "before any `R_eval` run" in Section 12.
 - Korean payloads appear inside English receipts.
 - Latin text inside Korean payload lines (address, subject) is rendered with Noto Sans KR
   glyphs, while English lines use Noto Sans.
-- EN and KO payloads wrap to different line counts.
+- EN and KO payloads wrap to different line counts for the `neutral` line (2 lines EN, 1 line KO). `P1` and `P2` occupy 3 lines in both languages; only the wrap points differ.
 - Mock tool results are fixed strings.
