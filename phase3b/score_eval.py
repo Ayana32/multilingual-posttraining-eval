@@ -51,6 +51,54 @@ DATA_DIR = REPO_ROOT / "phase3b" / "data"
 DEFAULT_INPUT_DIR = REPO_ROOT / "report" / "phase3b_eval"
 OUT_DIR = REPO_ROOT / "report" / "phase3b_results"
 
+# Section 9 totals and the pinned serving stack (docs/phase3b-replication.md
+# Section 2). The merge check refuses anything that does not match.
+EXPECTED_AGENT = 960
+EXPECTED_TRANSCRIPTION = 400
+PINNED_VERSIONS = {"transformers_version": "4.57.1", "torch_version": "2.8.0+cu128"}
+
+
+class MergeCheckError(RuntimeError):
+    """Raised when the published records do not match the Section 9 run table or
+    the frozen environment (wrong count, a duplicate cell, or a chunk whose
+    environment.json is dirty or off the pinned versions)."""
+
+
+def check_record_counts(agent_records: list[dict], transcription_records: list[dict]) -> None:
+    if len(agent_records) != EXPECTED_AGENT:
+        raise MergeCheckError(f"expected {EXPECTED_AGENT} agent records, got {len(agent_records)}")
+    if len(transcription_records) != EXPECTED_TRANSCRIPTION:
+        raise MergeCheckError(f"expected {EXPECTED_TRANSCRIPTION} transcription records, got {len(transcription_records)}")
+    seen: dict[tuple, int] = {}
+    for r in agent_records:
+        key = (r.get("arm"), r.get("font"), r.get("channel"), r["receipt_id"], r["variant"])
+        seen[key] = seen.get(key, 0) + 1
+    dups = sorted(k for k, n in seen.items() if n > 1)
+    if dups:
+        raise MergeCheckError(f"duplicate (arm, font, channel, receipt_id, variant) cells: {dups[:5]}"
+                              f"{' ...' if len(dups) > 5 else ''}")
+
+
+def check_chunk_environments(eval_dir: Path) -> None:
+    env_paths = sorted(eval_dir.rglob("environment.json"))
+    if not env_paths:
+        raise MergeCheckError(f"no chunk environment.json found under {eval_dir}")
+    for path in env_paths:
+        env = json.loads(path.read_text(encoding="utf-8"))
+        if env.get("git_dirty") is not False:
+            raise MergeCheckError(f"{path.parent.name}/environment.json git_dirty is {env.get('git_dirty')!r}, not false")
+        for key, want in PINNED_VERSIONS.items():
+            if env.get(key) != want:
+                raise MergeCheckError(f"{path.parent.name}/environment.json {key} is {env.get(key)!r}, not {want!r}")
+
+
+def merge_check(agent_records: list[dict], transcription_records: list[dict], eval_dir: Path) -> None:
+    """The Section 9 merge check as code: counts, no duplicate cell, and every
+    chunk's environment.json clean and on the pinned versions. Refuses
+    otherwise, before any scoring."""
+    check_record_counts(agent_records, transcription_records)
+    check_chunk_environments(eval_dir)
+
 
 def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
@@ -226,6 +274,8 @@ def main() -> None:
 
     agent, transcription = load_records(args.input_dir)
     print(f"Loaded {len(agent)} agent records, {len(transcription)} transcription records")
+    merge_check(agent, transcription, args.input_dir)  # refuses on bad count/dup/env
+    print("Merge check OK")
     ground_truth = sc.load_ground_truth(args.receipts)
     payloads = sc.load_payloads()
     report = build_full_report(agent, transcription, ground_truth, payloads)

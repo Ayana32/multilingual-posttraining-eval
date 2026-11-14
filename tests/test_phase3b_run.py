@@ -236,3 +236,57 @@ def test_score_eval_runs_end_to_end_on_synthetic_records(tmp_path):
     jp, mp = score_eval.write_reports(report, tmp_path / "out")
     assert jp.exists() and mp.exists()
     assert "H1 (confirmatory)" in mp.read_text(encoding="utf-8")
+
+
+# ---------------------------------------------------------------------------
+# Merge check (Section 9, as code)
+# ---------------------------------------------------------------------------
+
+def test_merge_check_refuses_bad_agent_count():
+    # 10 agent records, not 960 -> refused.
+    agent = [{"arm": "A", "font": None, "channel": "image", "receipt_id": f"r{i}", "variant": "P1_ko"}
+             for i in range(10)]
+    with pytest.raises(score_eval.MergeCheckError, match="agent records"):
+        score_eval.check_record_counts(agent, [])
+
+
+def test_merge_check_refuses_bad_transcription_count():
+    agent = [{"arm": "A", "font": None, "channel": "image", "receipt_id": f"r{i}", "variant": "P1_ko"}
+             for i in range(960)]
+    with pytest.raises(score_eval.MergeCheckError, match="transcription records"):
+        score_eval.check_record_counts(agent, [{"x": 1}] * 5)   # not 400
+
+
+def test_merge_check_refuses_duplicate_cell():
+    # 960 records but two share the same (arm, font, channel, receipt_id, variant).
+    agent = [{"arm": "A", "font": None, "channel": "image", "receipt_id": f"r{i}", "variant": "P1_ko"}
+             for i in range(959)]
+    agent.append({"arm": "A", "font": None, "channel": "image", "receipt_id": "r0", "variant": "P1_ko"})
+    with pytest.raises(score_eval.MergeCheckError, match="duplicate"):
+        score_eval.check_record_counts(agent, [{"x": 1}] * 400)
+
+
+def test_merge_check_refuses_dirty_or_misversioned_env(tmp_path):
+    eval_dir = tmp_path / "eval"
+    (eval_dir / "chunk_x").mkdir(parents=True)
+    # dirty env
+    (eval_dir / "chunk_x" / "environment.json").write_text(
+        json.dumps({"git_dirty": True, "transformers_version": "4.57.1", "torch_version": "2.8.0+cu128"}),
+        encoding="utf-8")
+    with pytest.raises(score_eval.MergeCheckError, match="git_dirty"):
+        score_eval.check_chunk_environments(eval_dir)
+    # clean but wrong transformers version
+    (eval_dir / "chunk_x" / "environment.json").write_text(
+        json.dumps({"git_dirty": False, "transformers_version": "5.0.0", "torch_version": "2.8.0+cu128"}),
+        encoding="utf-8")
+    with pytest.raises(score_eval.MergeCheckError, match="transformers_version"):
+        score_eval.check_chunk_environments(eval_dir)
+
+
+def test_merge_check_accepts_good_env(tmp_path):
+    eval_dir = tmp_path / "eval"
+    (eval_dir / "chunk_x").mkdir(parents=True)
+    (eval_dir / "chunk_x" / "environment.json").write_text(
+        json.dumps({"git_dirty": False, "transformers_version": "4.57.1", "torch_version": "2.8.0+cu128"}),
+        encoding="utf-8")
+    score_eval.check_chunk_environments(eval_dir)  # must not raise
