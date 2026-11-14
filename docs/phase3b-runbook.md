@@ -118,6 +118,32 @@ the re-run copy count next to Phase 3's 16) and writes
 the summary is copied to the Mac and committed into `report/phase3b/` there. It
 verifies `report/phase3_eval/SHA256SUMS` before and after.
 
+## Throughput test (Section 11), before launching the rest
+
+Run ONE agent chunk first, timed, and estimate the full run before committing to
+it. `agent_A_image_g1` is 70 agent runs (7 variants x 10 receipts); pick any one
+agent chunk:
+
+```bash
+/usr/bin/time -v python3 phase3b/run.py --chunk agent_A_image_g1 \
+  --out-dir results/phase3b/eval/agent_A_image_g1 2>&1 | tee /root/logs/agent_A_image_g1.time
+```
+
+Record the wall-clock time here when run (fill in on the pod):
+
+```
+throughput test: agent_A_image_g1, <N> agent runs, wall time <MM:SS> on 1x A40
+=> per-agent-run ~<T> s; estimated 960 agent runs ~<...>, 400 transcription runs
+   ~<...> (transcription is single-turn, typically faster), total ~<...>.
+```
+
+This is a real, valid chunk; the full-run launcher below re-runs it along with
+every other chunk, which is harmless (greedy decoding, identical output
+overwrites the same `--out-dir`), so no special handling is needed. The
+throughput test changes nothing in `docs/phase3b-replication.md` (Section 11: it
+measures speed, not any pre-registered measure). Only after the estimate looks
+acceptable, launch the full run below.
+
 ## R_eval: run all chunks
 
 **Clean-tree pre-flight (run immediately before launching, must be empty):**
