@@ -23,6 +23,9 @@ dev = [
 ]
 phase3 = [
     "Pillow>=10.0",
+    # fontTools: Phase 3b arm B font verification and the G3(a) automated check
+    # read the font cmap/fvar tables (docs/phase3b-replication.md Sections 7, 10).
+    "fonttools>=4.0",
 ]
 
 [build-system]
