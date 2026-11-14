@@ -78,6 +78,11 @@ DATA_DIR = REPO_ROOT / "phase3" / "data"
 
 CHANNELS = ("image", "text")
 COMMIT_B_TAG = "phase3-prereg-B"
+# Phase 3b (docs/phase3b-replication.md Section 4a): a single-stage
+# pre-registration, so its eval guard checks one tag and no Commit A/B config
+# flag. Its receipt set is kept visibly distinct from Phase 3's "eval".
+PHASE3B_TAG = "phase3b-prereg"
+PHASE3B_EVAL_SET = "phase3b_eval"
 MAX_ASSISTANT_TURNS = 3
 MOCK_TOOL_RESULTS = {
     "record_expense": "Expense recorded.",
@@ -347,6 +352,64 @@ def guard_eval_run(row: dict, commit_b_tag: bool, repo_root: Path = REPO_ROOT) -
         )
 
 
+def _tag_exists(tag: str, repo_root: Path = REPO_ROOT) -> bool:
+    try:
+        result = subprocess.run(
+            ["git", "tag", "--list", tag],
+            cwd=repo_root, capture_output=True, text=True, check=True,
+        )
+    except (subprocess.CalledProcessError, FileNotFoundError, OSError):
+        return False
+    return result.stdout.strip() == tag
+
+
+def _head_is_tag_or_descendant(tag: str, repo_root: Path = REPO_ROOT) -> bool:
+    """True iff HEAD is the tag's commit itself or a descendant of it
+    (`git merge-base --is-ancestor`). Fails closed on any error."""
+    try:
+        result = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", tag, "HEAD"],
+            cwd=repo_root, capture_output=True, text=True,
+        )
+    except (FileNotFoundError, OSError):
+        return False
+    return result.returncode == 0
+
+
+def phase3b_tag_exists(repo_root: Path = REPO_ROOT) -> bool:
+    return _tag_exists(PHASE3B_TAG, repo_root)
+
+
+def head_is_phase3b_or_descendant(repo_root: Path = REPO_ROOT) -> bool:
+    return _head_is_tag_or_descendant(PHASE3B_TAG, repo_root)
+
+
+def guard_phase3b_eval_run(row: dict, repo_root: Path = REPO_ROOT) -> None:
+    """Phase 3b's eval guard (docs/phase3b-replication.md Section 4a): refuses a
+    receipt_set == 'phase3b_eval' row unless the git tag 'phase3b-prereg' exists
+    and HEAD is that tag's commit or a descendant of it -- the same two checks
+    guard_eval_run performs for Phase 3, adapted to the new tag name. Unlike
+    Phase 3's guard there is no separate config boolean, since Phase 3b is a
+    single-stage pre-registration with no Commit A/B split. Rows outside
+    receipt_set == 'phase3b_eval' are always allowed (same early-return shape as
+    guard_eval_run)."""
+    if row["receipt_set"] != PHASE3B_EVAL_SET:
+        return
+    if not phase3b_tag_exists(repo_root):
+        raise EvalGuardError(
+            f"refusing to run on receipt_set='{PHASE3B_EVAL_SET}': the git tag "
+            f"'{PHASE3B_TAG}' was not found (the pre-registration must be tagged before any "
+            "Phase 3b evaluation run)."
+        )
+    if not head_is_phase3b_or_descendant(repo_root):
+        raise EvalGuardError(
+            f"refusing to run on receipt_set='{PHASE3B_EVAL_SET}': HEAD is not '{PHASE3B_TAG}' "
+            "or a descendant of it (checked via `git merge-base --is-ancestor`). Phase 3b must "
+            "run from code that has the pre-registration tag in its history, not an earlier "
+            "checkout or a diverged branch."
+        )
+
+
 # ---------------------------------------------------------------------------
 # model_revision validation (Section 3: "pinned to a commit hash... `main`
 # is not allowed") and the run-level environment record.
@@ -457,11 +520,14 @@ def start_run(
     read at all), refuses before writing anything -- R_eval must be run
     from a clean, reproducible commit, recorded by git_commit."""
     validate_model_revision(config.model_revision)
-    if receipt_set == "eval" and git_is_dirty(repo_root):
+    # The dirty-tree guard applies to Phase 3's "eval" and, per
+    # docs/phase3b-replication.md Section 4a, to Phase 3b's "phase3b_eval" under
+    # the identical condition, so both must run from a clean, recorded commit.
+    if receipt_set in ("eval", PHASE3B_EVAL_SET) and git_is_dirty(repo_root):
         raise DirtyRepoEvalGuardError(
-            "refusing to start a run on receipt_set='eval': the repository has uncommitted "
-            "changes (or git state could not be read). Commit or stash them first, so the "
-            "run's code version is reproducible."
+            f"refusing to start a run on receipt_set={receipt_set!r}: the repository has "
+            "uncommitted changes (or git state could not be read). Commit or stash them first, "
+            "so the run's code version is reproducible."
         )
     out_dir.mkdir(parents=True, exist_ok=True)
     return write_runtime_environment(out_dir / "environment.json", repo_root)
@@ -523,6 +589,7 @@ def run_agent(
     """
     validate_model_revision(config.model_revision)
     guard_eval_run(row, config.commit_b_tag, repo_root)
+    guard_phase3b_eval_run(row, repo_root)
 
     model_input = build_model_input(row, channel, fixtures, data_dir)
     tools = model_input["tools"]
