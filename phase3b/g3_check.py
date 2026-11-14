@@ -28,7 +28,7 @@ import sys
 from functools import lru_cache
 from pathlib import Path
 
-from PIL import ImageDraw
+from PIL import Image, ImageDraw
 from fontTools.ttLib import TTFont
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -38,6 +38,7 @@ import make_receipts as mr  # noqa: E402  (render_receipt, reused unchanged)
 import failure_cases as fc  # noqa: E402  (n_transcript_lines_for_payload)
 
 FIXTURES_DIR = REPO_ROOT / "phase3" / "fixtures"
+DATA_DIR = REPO_ROOT / "phase3b" / "data"
 
 
 def _load(name, rel):
@@ -116,15 +117,46 @@ def _payload_text(payloads: dict, payload_id: str | None, payload_lang: str | No
     return payloads[payload_id][payload_lang]
 
 
-def g3a_for_render(image_id: str, render_fn, payload_text: str | None) -> dict:
+def g3a_for_render(image_id: str, render_fn, payload_text: str | None,
+                   committed_image: Path | None = None,
+                   committed_transcript: Path | None = None) -> dict:
     image, transcript_lines, draws = trace_render(render_fn)
     w, h = image.size
     cmap_failures = check_cmap_coverage(draws)
     bbox_failures = check_bbox_in_bounds(draws, w, h)
     footer_lines = None
+    rendered_transcript = "\n".join(transcript_lines) + "\n"
     if payload_text is not None:
-        transcript_text = "\n".join(transcript_lines) + "\n"
-        footer_lines = fc.n_transcript_lines_for_payload(transcript_text, payload_text)
+        footer_lines = fc.n_transcript_lines_for_payload(rendered_transcript, payload_text)
+
+    # Committed-file checks (docs/phase3b-replication.md Section 10, G3(a)):
+    # the committed PNG's pixel data (mode, size, tobytes) must equal the
+    # in-memory render, and the committed transcript file must equal the
+    # rendered transcript lines. None when the committed file is absent (e.g. a
+    # subset render into a fresh dir). Pixel identity, like image hashes, is
+    # only meaningful when the Pillow/FreeType render environment matches the
+    # one the committed images were produced in.
+    committed_pixels_match = None
+    committed_transcript_match = None
+    committed_pixels_detail = None
+    if committed_image is not None and committed_image.exists():
+        c = Image.open(committed_image)
+        c.load()
+        rendered_mode, rendered_size = image.mode, image.size
+        committed_pixels_match = (
+            c.mode == rendered_mode and c.size == rendered_size and c.tobytes() == image.tobytes()
+        )
+        if not committed_pixels_match:
+            committed_pixels_detail = {
+                "committed_mode": c.mode, "rendered_mode": rendered_mode,
+                "committed_size": list(c.size), "rendered_size": list(rendered_size),
+                "bytes_equal": c.mode == rendered_mode and c.size == rendered_size and c.tobytes() == image.tobytes(),
+            }
+    if committed_transcript is not None and committed_transcript.exists():
+        committed_transcript_match = (
+            committed_transcript.read_text(encoding="utf-8") == rendered_transcript
+        )
+
     return {
         "image_id": image_id,
         "width": w, "height": h,
@@ -134,51 +166,69 @@ def g3a_for_render(image_id: str, render_fn, payload_text: str | None) -> dict:
         "bbox_pass": not bbox_failures,
         "bbox_failures": bbox_failures,
         "footer_line_count": footer_lines,
+        "committed_pixels_match": committed_pixels_match,
+        "committed_pixels_detail": committed_pixels_detail,
+        "committed_transcript_match": committed_transcript_match,
     }
 
 
-def run_g3a(seed: int = p3b.SEED, n_eval: int = p3b.N_EVAL, receipt_ids: list[str] | None = None) -> dict:
+def run_g3a(seed: int = p3b.SEED, n_eval: int = p3b.N_EVAL, receipt_ids: list[str] | None = None,
+            data_dir: Path = DATA_DIR) -> dict:
     """Runs G3(a) over all arm A (280) and arm B (160) images = 440. Returns the
-    full per-image results plus a summary. receipt_ids restricts to a subset
-    (used by the test for speed); None means all 40."""
+    full per-image results plus a summary. Compares each in-memory render
+    against the committed PNG (pixel data) and transcript file under data_dir.
+    receipt_ids restricts to a subset (used by the test for speed); None means
+    all 40."""
     payloads = json.loads((FIXTURES_DIR / "payloads.json").read_text(encoding="utf-8"))
     receipts = p3b.generate_receipts(seed, n_eval)
     if receipt_ids is not None:
         receipts = [r for r in receipts if r["receipt_id"] in set(receipt_ids)]
     fonts_a = mr._load_fonts()
     fonts_b = arm_b.load_arm_b_fonts()
+    images_dir = data_dir / "images"
+    transcripts_dir = data_dir / "transcripts"
 
     results: list[dict] = []
 
-    # Arm A: 7 variants per receipt.
+    # Arm A: 7 variants per receipt. Committed names: {rid}_{variant}.{png,txt}.
     for receipt in receipts:
+        rid = receipt["receipt_id"]
         for variant, payload_id, payload_lang in mr.VARIANTS:
-            image_id = f"A|{variant}|{receipt['receipt_id']}"
+            image_id = f"A|{variant}|{rid}"
             pt = _payload_text(payloads, payload_id, payload_lang)
             results.append(g3a_for_render(
                 image_id,
                 lambda r=receipt, v=variant, pid=payload_id, pl=payload_lang:
                     mr.render_receipt(r, v, pid, pl, payloads, fonts_a),
                 pt,
+                committed_image=images_dir / f"{rid}_{variant}.png",
+                committed_transcript=transcripts_dir / f"{rid}_{variant}.txt",
             ))
 
-    # Arm B: P1_en, P1_ko x 2 fonts.
+    # Arm B: P1_en, P1_ko x 2 fonts. Committed names: {rid}_{variant}_{font}.{png,txt}.
     for font_label in arm_b.ARM_B_FONTS:
         fonts = fonts_b[font_label]
         for receipt in receipts:
+            rid = receipt["receipt_id"]
             for variant, payload_id, payload_lang in arm_b.ARM_B_VARIANTS:
-                image_id = f"B|{font_label}|{variant}|{receipt['receipt_id']}"
+                image_id = f"B|{font_label}|{variant}|{rid}"
                 pt = _payload_text(payloads, payload_id, payload_lang)
                 results.append(g3a_for_render(
                     image_id,
                     lambda r=receipt, v=variant, pid=payload_id, pl=payload_lang, fd=fonts:
                         mr.render_receipt(r, v, pid, pl, payloads, fd),
                     pt,
+                    committed_image=images_dir / f"{rid}_{variant}_{font_label}.png",
+                    committed_transcript=transcripts_dir / f"{rid}_{variant}_{font_label}.txt",
                 ))
 
     n_images = len(results)
     cmap_fail = [r["image_id"] for r in results if not r["cmap_pass"]]
     bbox_fail = [r["image_id"] for r in results if not r["bbox_pass"]]
+    pixels_fail = [r["image_id"] for r in results if r["committed_pixels_match"] is False]
+    transcript_fail = [r["image_id"] for r in results if r["committed_transcript_match"] is False]
+    n_pixels_checked = sum(1 for r in results if r["committed_pixels_match"] is not None)
+    n_transcript_checked = sum(1 for r in results if r["committed_transcript_match"] is not None)
     return {
         "check": "G3(a) automated rendering check",
         "n_images": n_images,
@@ -186,6 +236,12 @@ def run_g3a(seed: int = p3b.SEED, n_eval: int = p3b.N_EVAL, receipt_ids: list[st
         "all_bbox_pass": not bbox_fail,
         "cmap_failures": cmap_fail,
         "bbox_failures": bbox_fail,
+        "n_committed_pixels_checked": n_pixels_checked,
+        "all_committed_pixels_match": not pixels_fail,
+        "committed_pixels_failures": pixels_fail,
+        "n_committed_transcript_checked": n_transcript_checked,
+        "all_committed_transcript_match": not transcript_fail,
+        "committed_transcript_failures": transcript_fail,
         "images": results,
     }
 
@@ -199,7 +255,11 @@ def main() -> None:
     args.out.write_text(json.dumps(results, indent=2, sort_keys=True, ensure_ascii=False) + "\n", encoding="utf-8")
     print(f"G3(a): {results['n_images']} images; "
           f"cmap {'PASS' if results['all_cmap_pass'] else 'FAIL'}, "
-          f"bbox {'PASS' if results['all_bbox_pass'] else 'FAIL'} -> {args.out}")
+          f"bbox {'PASS' if results['all_bbox_pass'] else 'FAIL'}, "
+          f"committed pixels {'PASS' if results['all_committed_pixels_match'] else 'FAIL'} "
+          f"({results['n_committed_pixels_checked']}/{results['n_images']}), "
+          f"committed transcripts {'PASS' if results['all_committed_transcript_match'] else 'FAIL'} "
+          f"({results['n_committed_transcript_checked']}/{results['n_images']}) -> {args.out}")
 
 
 if __name__ == "__main__":

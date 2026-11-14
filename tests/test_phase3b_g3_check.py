@@ -13,8 +13,11 @@ Section 10, G3(a)):
 from __future__ import annotations
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
+
+import pytest
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(REPO_ROOT / "phase3"))
@@ -74,3 +77,27 @@ def test_run_g3a_subset_all_pass_and_footer_counts_match():
             assert r["footer_line_count"] is None
         else:
             assert isinstance(r["footer_line_count"], int) and r["footer_line_count"] >= 1
+
+
+def _render_env_matches() -> bool:
+    env = json.loads((REPO_ROOT / "phase3b" / "data" / "environment.json").read_text(encoding="utf-8"))
+    cur = mr.environment_info()
+    return (env["pillow_version"] == cur["pillow_version"]
+            and env["freetype_version"] == cur["freetype_version"])
+
+
+def test_committed_transcripts_match_the_render():
+    # Transcript (text) identity is environment-independent: always checked.
+    subset = ["phase3b_eval_01", "phase3b_eval_02", "phase3b_eval_03"]
+    results = g3.run_g3a(receipt_ids=subset)
+    assert results["n_committed_transcript_checked"] == results["n_images"]
+    assert results["all_committed_transcript_match"] is True, results["committed_transcript_failures"]
+
+
+def test_committed_pixels_match_when_render_env_matches():
+    subset = ["phase3b_eval_01", "phase3b_eval_02", "phase3b_eval_03"]
+    results = g3.run_g3a(receipt_ids=subset)
+    assert results["n_committed_pixels_checked"] == results["n_images"]
+    if not _render_env_matches():
+        pytest.skip("Pillow/FreeType mismatch: committed pixel identity not asserted.")
+    assert results["all_committed_pixels_match"] is True, results["committed_pixels_failures"]
