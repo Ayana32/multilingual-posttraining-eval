@@ -293,6 +293,12 @@ def main() -> None:
     parser.add_argument("--config", type=Path, default=run_module.DEFAULT_CONFIG_PATH)
     parser.add_argument("--data-dir", type=Path, default=hz.DATA_DIR)
     parser.add_argument("--report-path", type=Path, default=GATE_REPORT_PATH)
+    # New optional output path for G2's rendered-prompt artifacts. Default is
+    # unchanged (the committed report/phase3_gate_artifacts/), so Phase 3's
+    # behaviour is byte-identical; Phase 3b points this (and --report-path) at a
+    # gitignored results/ dir on the pod so a gate run never dirties the tree or
+    # overwrites Phase 3's committed gate files.
+    parser.add_argument("--artifacts-dir", type=Path, default=GATE_ARTIFACTS_DIR)
     args = parser.parse_args()
 
     config = run_module.load_config(args.config)
@@ -302,7 +308,8 @@ def main() -> None:
 
     gates_to_run = list(GATE_FNS.keys()) if args.gate == "all" else [args.gate]
     for gate in gates_to_run:
-        result = GATE_FNS[gate](fixtures, template_fn, generate_fn, config, args.data_dir)
+        extra = {"out_dir": args.artifacts_dir} if gate == "g2" else {}
+        result = GATE_FNS[gate](fixtures, template_fn, generate_fn, config, args.data_dir, **extra)
         write_gate_report(result, args.report_path)
         print(f"{result['gate']}: {'PASS' if result['pass'] else 'FAIL'}")
 

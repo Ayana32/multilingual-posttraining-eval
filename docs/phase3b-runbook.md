@@ -75,16 +75,24 @@ check is not meaningful and the mismatch is logged in
 
 Phase 3b re-uses Phase 3's existing tune receipts and Phase 3's own pass
 criteria unchanged (`docs/phase3b-replication.md` Section 10), so the gate
-commands are Phase 3's, run in the same order:
+commands are Phase 3's, run in the same order. **Redirect every gate output to a
+gitignored `results/` dir** with `--report-path` and `--artifacts-dir`: the
+defaults are the committed `report/phase3_gate_report.json` /
+`report/phase3_gate_artifacts/`, and writing those on the pod would both dirty
+the tree (so R_eval is refused) and overwrite Phase 3's committed gate files.
 
 ```bash
-python3 phase3/gates.py g2
-python3 phase3/gates.py g1b
-python3 phase3/gates.py g1a
-python3 phase3/gates.py g0
+GATES=results/phase3b/gates
+for g in g2 g1b g1a g0; do
+  python3 phase3/gates.py "$g" \
+    --report-path "$GATES/phase3b_gate_report.json" \
+    --artifacts-dir "$GATES/artifacts"
+done
 ```
 
-All four must print `PASS` before any Phase 3b evaluation run.
+All four must print `PASS` before any Phase 3b evaluation run. Nothing under
+`report/` is touched; the gate report is copied to the Mac and committed there
+if it is wanted in the record.
 
 ## G0 additional: replay Phase 3's 20 P1_ko image eval runs
 
@@ -98,17 +106,34 @@ python3 phase3/run.py --receipt-set eval --channels image --variants P1_ko \
   --receipt-ids eval_01,eval_02,eval_03,eval_04,eval_05,eval_06,eval_07,eval_08,eval_09,eval_10,eval_11,eval_12,eval_13,eval_14,eval_15,eval_16,eval_17,eval_18,eval_19,eval_20 \
   --out-dir results/phase3b/g0_rerun_check
 
-python3 phase3b/g0_compare.py --rerun-dir results/phase3b/g0_rerun_check --out-dir report/phase3b
+python3 phase3b/g0_compare.py --rerun-dir results/phase3b/g0_rerun_check \
+  --out-dir results/phase3b/g0_summary
 ```
 
 `g0_compare.py` applies the ordered mismatch rule (version diff is the cause to
 fix first; otherwise an output diff is a nondeterminism finding, reported with
-the re-run copy count next to Phase 3's 16) and writes the committed summary
-`report/phase3b/g0_rerun_summary.{json,md}`. It verifies
-`report/phase3_eval/SHA256SUMS` before and after. Commit that summary (the raw
-re-run records under `results/` are not committed).
+the re-run copy count next to Phase 3's 16) and writes
+`g0_rerun_summary.{json,md}`. **On the pod it writes under gitignored
+`results/phase3b/g0_summary/` (not `report/phase3b/`), so the tree stays clean;**
+the summary is copied to the Mac and committed into `report/phase3b/` there. It
+verifies `report/phase3_eval/SHA256SUMS` before and after.
 
 ## R_eval: run all chunks
+
+**Clean-tree pre-flight (run immediately before launching, must be empty):**
+
+```bash
+git status --porcelain && echo "---" && \
+  test -z "$(git status --porcelain)" && echo "CLEAN TREE OK -> launch" \
+  || { echo "FAIL: tree dirty, R_eval will be refused. Move all outputs under results/ or /root/logs and re-check."; exit 1; }
+```
+
+Every pod-side output -- gates, the G0 replay and its summary, the R_eval
+chunks, and all logs -- must live under gitignored `results/phase3b/` or
+`/root/logs`. If `git status --porcelain` prints anything, a step wrote into a
+tracked path (most likely a missing `--report-path`/`--artifacts-dir`/`--out-dir`
+redirect); fix it before launching, since `start_run` refuses `phase3b_eval` on
+a dirty tree.
 
 ```bash
 mkdir -p /root/logs
