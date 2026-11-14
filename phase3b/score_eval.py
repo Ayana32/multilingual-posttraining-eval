@@ -30,6 +30,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 
 import score as sc  # noqa: E402
 import report as rpt  # noqa: E402
+import exploratory_m3 as em  # noqa: E402  (verify_sha256sums, reused)
 
 import importlib.util  # noqa: E402
 
@@ -45,7 +46,9 @@ def _load(name, rel):
 p3s = _load("phase3b_score", "phase3b/score.py")
 
 DATA_DIR = REPO_ROOT / "phase3b" / "data"
-DEFAULT_INPUT_DIR = REPO_ROOT / "results" / "phase3b" / "eval"
+# Scoring reads ONLY the committed, SHA-verified report/phase3b_eval/ (written by
+# phase3b/publish_eval.py), never the raw gitignored pod results.
+DEFAULT_INPUT_DIR = REPO_ROOT / "report" / "phase3b_eval"
 OUT_DIR = REPO_ROOT / "report" / "phase3b_results"
 
 
@@ -53,9 +56,12 @@ def load_jsonl(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text(encoding="utf-8").splitlines() if line.strip()]
 
 
-def load_records(input_dir: Path) -> tuple[list[dict], list[dict]]:
-    """Walks input_dir for every records.jsonl (agent) and
-    transcription_records.jsonl (transcription) under it, in sorted order."""
+def load_records(input_dir: Path, verify: bool = True) -> tuple[list[dict], list[dict]]:
+    """Verifies input_dir/SHA256SUMS first (unless verify=False), then walks it
+    for every records.jsonl (agent) and transcription_records.jsonl
+    (transcription), in sorted order."""
+    if verify:
+        em.verify_sha256sums(input_dir)
     agent, transcription = [], []
     for path in sorted(input_dir.rglob("records.jsonl")):
         agent.extend(load_jsonl(path))

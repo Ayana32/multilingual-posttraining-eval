@@ -152,23 +152,54 @@ one); leave the failed partial dir in place but exclude it from scoring.
 Each chunk writes its own `environment.json` via `harness.start_run`, so the
 version/`git_dirty` checks below can be made per chunk, same as Phase 3.
 
-## Merge check (after all chunks)
+## Copy results to the Mac (before stopping the pod)
 
-- `sum(agent records across chunks) == 960`; `sum(transcription records) == 400`.
-- no duplicate `(arm, font, channel, receipt_id, variant)` across agent chunks.
-- every chunk's `environment.json`: `git_dirty == false`, `transformers_version
-  == "4.57.1"`, `torch_version == "2.8.0+cu128"`, `gpu_name == "NVIDIA A40"`, and
-  `git_commit` at/after `phase3b-prereg`.
+The pod is **not stopped** until the copy is verified on the Mac. Copy back the
+whole gitignored results tree and the chunk status log, e.g.:
+
+```
+results/phase3b/eval/*                      -> <mac>/results/phase3b/eval/
+/root/logs/phase3b_chunk_status.log         -> <mac>/results/phase3b/phase3b_chunk_status.log
+results/phase3b/g0_summary/*                -> <mac>/results/phase3b/g0_summary/
+```
+
+Verify the files arrived intact on the Mac (counts, and a spot-check of a few
+`records.jsonl`) before terminating the pod.
+
+## Publish (on the Mac)
+
+`phase3b/publish_eval.py` copies exactly one successful directory per chunk
+(exit code 0 in the status log AND a record count equal to the plan) into the
+committed `report/phase3b_eval/<chunk>/`, and writes `report/phase3b_eval/SHA256SUMS`.
+It refuses on any missing, short, over-long or duplicate chunk, so a partial or
+retried run cannot be published by accident.
+
+```bash
+python3 phase3b/publish_eval.py \
+  --results-dir results/phase3b/eval \
+  --status-log results/phase3b/phase3b_chunk_status.log \
+  --out-dir report/phase3b_eval
+```
+
+Commit `report/phase3b_eval/` (records + per-chunk environment.json + SHA256SUMS)
+and the G0 summary copied into `report/phase3b/`.
 
 ## Score
 
+`phase3b/score_eval.py` reads **only** the committed `report/phase3b_eval/`,
+verifies `SHA256SUMS` first, and runs the merge check (960 agent + 400
+transcription records, no duplicate `(arm, font, channel, receipt_id, variant)`,
+every chunk's `environment.json` with `git_dirty == false` and the pinned
+`transformers 4.57.1` / `torch 2.8.0+cu128`) before scoring -- refusing
+otherwise.
+
 ```bash
-python3 phase3b/score_eval.py --input-dir results/phase3b/eval --out-dir report/phase3b_results
+python3 phase3b/score_eval.py        # defaults: report/phase3b_eval -> report/phase3b_results
 ```
 
 Writes `report/phase3b_results/phase3b_results.{json,md}` with every Section 5-9
 measure (H1's one-sided exact McNemar for P1_ko with the Newcombe and bootstrap
 intervals; P2_ko descriptively; per-cell copy/conditional/copy_first_call/
 worst_case/category and M1-CO with Wilson; false positives; paired EN/KO
-discordant; d_i on M2 and on copy; T; arm B per font + the determinism check;
-arm C next to arm A). Commit those two files.
+discordant; d_i on M2 and on copy; T; arm B per font with its footer line count +
+the determinism check; arm C next to arm A). Commit those two files.
