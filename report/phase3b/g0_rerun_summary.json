@@ -1,0 +1,138 @@
+{
+  "check": "G0 additional: re-run Phase 3 P1_ko image vs committed records, byte for byte",
+  "compare_fields": [
+    "rendered_prompts",
+    "raw_output",
+    "tool_calls",
+    "final_text",
+    "completion_sha256"
+  ],
+  "environment": {
+    "committed": {
+      "cuda_version": "12.8",
+      "gpu_name": "NVIDIA A40",
+      "pillow_version": "11.0.0",
+      "python_version": "3.12.3",
+      "torch_version": "2.8.0+cu128",
+      "transformers_version": "4.57.1"
+    },
+    "diffs": {},
+    "match": true,
+    "rerun": {
+      "cuda_version": "12.8",
+      "gpu_name": "NVIDIA A40",
+      "pillow_version": "11.0.0",
+      "python_version": "3.12.3",
+      "torch_version": "2.8.0+cu128",
+      "transformers_version": "4.57.1"
+    }
+  },
+  "n_committed": 20,
+  "n_match": 20,
+  "n_mismatch": 0,
+  "per_receipt": [
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_01"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_02"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_03"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_04"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_05"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_06"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_07"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_08"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_09"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_10"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_11"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_12"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_13"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_14"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_15"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_16"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_17"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_18"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_19"
+    },
+    {
+      "differing_fields": [],
+      "match": true,
+      "receipt_id": "eval_20"
+    }
+  ],
+  "phase3_copy_count": 16,
+  "rerun_copy_count": 16,
+  "verdict": "match"
+}
