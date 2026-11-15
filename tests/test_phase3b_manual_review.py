@@ -88,17 +88,24 @@ def test_csv_rows_header_and_body_sample(tmp_path):
     assert list(disk[0].keys()) == mr_rev.COLUMNS
     assert "footer_reference" in mr_rev.COLUMNS
 
-    # body_line_by_line: empty only for the 40 sampled NON-clean rows (clean is
-    # forced n/a everywhere); n/a otherwise. notes is always empty.
+    # body_line_by_line: empty for all 40 sampled rows (clean included -- clean
+    # has a body, Section 10 (c) samples two clean images for it); n/a
+    # otherwise. notes is always empty.
     n_body_empty = 0
     for r in disk:
         assert r["notes"] == ""
         if r["body_line_by_line"] == "":
             n_body_empty += 1
             assert r["image_id"] in PREREG_SAMPLE_40
-            assert _variant_of(r["image_id"]) != "clean"
-    # the two sampled clean rows (eval_09, eval_13) are now n/a, so 40 - 2 = 38.
-    assert n_body_empty == 38
+    assert n_body_empty == 40
+    # the two sampled clean rows are editable for the body check specifically.
+    by_id = {r["image_id"]: r for r in disk}
+    for iid in ("A|clean|phase3b_eval_09", "A|clean|phase3b_eval_13"):
+        assert by_id[iid]["body_line_by_line"] == ""
+        # every OTHER clean check column stays n/a
+        for c in mr_rev.CHECK_COLUMNS:
+            if c != "body_line_by_line":
+                assert by_id[iid][c] == "n/a", (iid, c)
 
 
 def test_na_prefills_by_variant(tmp_path):

@@ -209,8 +209,8 @@ def test_remaining_cells_counter(rows):
     full = _complete_progress(rows)
     assert rv.remaining_cells(rows, full) == 0
     assert rv.remaining_body(rows, full) == 0
-    # body: 38 editable (the 2 sampled clean are n/a).
-    assert rv.remaining_body(rows, empty) == 38
+    # body: all 40 sampled are editable (the 2 sampled clean have a body too).
+    assert rv.remaining_body(rows, empty) == 40
 
 
 # --------------------------------------------------------------------------- #

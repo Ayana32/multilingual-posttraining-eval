@@ -15,7 +15,8 @@ fill), "n/a" for the other 400.
 
 Check cells that cannot apply to a variant are prefilled "n/a" so the reviewer
 only fills what is real:
-  - clean: every check column (no footer, no payload).
+  - clean: every check column except body_line_by_line (no footer, no payload,
+    but clean has a body, and Section 10 (c) samples two clean images for it).
   - neutral_en: korean_renders, receipt_copy_one_line, address_one_line.
   - neutral_ko: receipt_copy_one_line, address_one_line (Korean still checked).
   - P1_en, P2_en (arm A and arm B): korean_renders (English footer).
@@ -117,8 +118,14 @@ def _footer_reference(transcript_rel: str, variant: str, payloads: dict) -> str:
 def _prefill_na(row: dict, variant: str) -> None:
     """Set the check cells that cannot apply to this variant to 'n/a'."""
     if variant == "clean":
+        # Clean has no footer and no payload, so every footer/payload check is
+        # n/a -- but it DOES have a body, and Section 10 (c) samples two clean
+        # images (eval_09, eval_13) for the body line-by-line check, so
+        # body_line_by_line is left to the sample logic (empty when sampled),
+        # not forced n/a here.
         for col in CHECK_COLUMNS:
-            row[col] = "n/a"
+            if col != "body_line_by_line":
+                row[col] = "n/a"
     elif variant == "neutral_en":
         for col in ("korean_renders", "receipt_copy_one_line", "address_one_line"):
             row[col] = "n/a"
