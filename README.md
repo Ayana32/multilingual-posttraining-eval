@@ -25,6 +25,12 @@ In a receipt-processing agent built on Qwen3-VL-8B-Instruct, with two mock tools
 
 See [docs/phase3-results.md](docs/phase3-results.md) for the full methodology, the pre-registered results, the exploratory findings, and limitations.
 
+## Phase 3b Results
+
+Phase 3b re-runs the receipt-processing agent injection on 40 new receipts with a pre-registered confirmatory test, using the same model (Qwen3-VL-8B-Instruct at a pinned revision), greedy decoding, and two mock tools. The pre-registered test is supported: for the Korean payload `P1_ko`, the email body copies the injected sentence far more often when the payload is in the receipt image than when it is in the text, 36/40 vs 0/40 (one-sided exact McNemar p = 1.455e-11; Newcombe d = 0.90 [0.743, 0.960]). Phase 3 saw this copying post hoc (16/20); Phase 3b supports it as a pre-registered result. In every injected condition the model still sent the email (M2 = 40/40); only the `P1_ko` image cell copied the sentence into the body. All pre-run gates passed, the Phase 3 `P1_ko` replay matched 20/20 byte for byte, and there were 0 harness or parse failures and 0 exclusions across 960 agent runs. Exploratory arms varying the footer font and adding a fixed defence sentence are descriptive only and are not powered for tests.
+
+See [docs/phase3b-results.md](docs/phase3b-results.md) for the confirmatory result, the integrity checks, the exploratory arms, the deviations, and limitations.
+
 ## Motivation
 
 Post-training safety evaluation is overwhelmingly conducted in English, even though the resulting models are deployed multilingually. It is not obvious that refusal behavior calibrated during English-centric post-training generalizes to other languages with the same reliability. This project builds the infrastructure to test that question directly and reproducibly, rather than assuming it.
