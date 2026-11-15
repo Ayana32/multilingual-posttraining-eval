@@ -73,25 +73,87 @@ def test_sampled_40_match_the_preregistered_list():
     assert sampled == PREREG_SAMPLE_40
 
 
-def test_csv_rows_and_cells(tmp_path):
-    out = tmp_path / "g3_manual_review.csv"
-    n = mr_rev.write_csv(out)
-    assert n == 440
-    with open(out, newline="", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    assert len(rows) == 440
-    assert list(rows[0].keys()) == mr_rev.COLUMNS
+def _variant_of(image_id: str) -> str:
+    parts = image_id.split("|")
+    return parts[1] if parts[0] == "A" else parts[2]
 
-    check_cells = ["korean_renders", "receipt_copy_one_line", "address_one_line",
-                   "footer_not_cut_or_overlapping", "body_footer_spacing_ok",
-                   "footer_line_by_line", "notes"]
+
+def test_csv_rows_header_and_body_sample(tmp_path):
+    out = tmp_path / "g3_manual_review.csv"
+    rows = mr_rev.write_csv(out)
+    assert len(rows) == 440
+    with open(out, newline="", encoding="utf-8") as f:
+        disk = list(csv.DictReader(f))
+    assert len(disk) == 440
+    assert list(disk[0].keys()) == mr_rev.COLUMNS
+    assert "footer_reference" in mr_rev.COLUMNS
+
+    # body_line_by_line: empty only for the 40 sampled NON-clean rows (clean is
+    # forced n/a everywhere); n/a otherwise. notes is always empty.
     n_body_empty = 0
-    for r in rows:
-        for c in check_cells:
-            assert r[c] == "", (r["image_id"], c)
+    for r in disk:
+        assert r["notes"] == ""
         if r["body_line_by_line"] == "":
             n_body_empty += 1
             assert r["image_id"] in PREREG_SAMPLE_40
-        else:
-            assert r["body_line_by_line"] == "n/a"
-    assert n_body_empty == 40
+            assert _variant_of(r["image_id"]) != "clean"
+    # the two sampled clean rows (eval_09, eval_13) are now n/a, so 40 - 2 = 38.
+    assert n_body_empty == 38
+
+
+def test_na_prefills_by_variant(tmp_path):
+    rows = mr_rev.write_csv(tmp_path / "x.csv")
+    by_id = {r["image_id"]: r for r in rows}
+
+    def row(iid):
+        return by_id[iid]
+
+    # clean: every check column n/a.
+    for c in mr_rev.CHECK_COLUMNS:
+        assert row("A|clean|phase3b_eval_01")[c] == "n/a", c
+
+    # neutral_en: korean_renders, receipt_copy_one_line, address_one_line n/a;
+    # footer checks remain empty (it has a footer).
+    r = row("A|neutral_en|phase3b_eval_01")
+    assert r["korean_renders"] == r["receipt_copy_one_line"] == r["address_one_line"] == "n/a"
+    assert r["footer_not_cut_or_overlapping"] == "" and r["footer_line_by_line"] == ""
+
+    # neutral_ko: only receipt_copy_one_line, address_one_line n/a; korean stays.
+    r = row("A|neutral_ko|phase3b_eval_01")
+    assert r["receipt_copy_one_line"] == r["address_one_line"] == "n/a"
+    assert r["korean_renders"] == ""
+
+    # P1_en/P2_en (arm A and arm B): korean_renders n/a, address/receipt stay.
+    for iid in ("A|P1_en|phase3b_eval_01", "A|P2_en|phase3b_eval_01",
+                "B|NotoSansKR|P1_en|phase3b_eval_01", "B|NanumGothic|P1_en|phase3b_eval_01"):
+        r = row(iid)
+        assert r["korean_renders"] == "n/a", iid
+        assert r["receipt_copy_one_line"] == "" and r["address_one_line"] == "", iid
+
+    # P1_ko/P2_ko: no payload-specific n/a (Korean + address + subject all apply).
+    for iid in ("A|P1_ko|phase3b_eval_01", "A|P2_ko|phase3b_eval_01", "B|NotoSansKR|P1_ko|phase3b_eval_01"):
+        r = row(iid)
+        assert r["korean_renders"] == r["receipt_copy_one_line"] == r["address_one_line"] == ""
+
+
+def test_footer_reference_column(tmp_path):
+    rows = mr_rev.write_csv(tmp_path / "x.csv")
+    by_id = {r["image_id"]: r for r in rows}
+    # clean has no footer -> empty.
+    assert by_id["A|clean|phase3b_eval_01"]["footer_reference"] == ""
+    # arm A P1_en footer is 3 lines (2 " / " separators); arm B NotoSansKR P1_en is 4.
+    assert by_id["A|P1_en|phase3b_eval_01"]["footer_reference"].count(" / ") == 2
+    assert by_id["B|NotoSansKR|P1_en|phase3b_eval_01"]["footer_reference"].count(" / ") == 3
+    # the reference actually contains the payload's target address.
+    assert "accounts-archive@example.com" in by_id["A|P1_ko|phase3b_eval_01"]["footer_reference"]
+
+
+def test_count_empty_per_column(tmp_path):
+    rows = mr_rev.write_csv(tmp_path / "x.csv")
+    counts = mr_rev.count_empty_per_column(rows)
+    assert set(counts) == set(mr_rev.COLUMNS)
+    # image_id/image_path/footer_reference(except clean) are filled; notes all empty.
+    assert counts["image_id"] == 0 and counts["image_path"] == 0
+    assert counts["notes"] == 440
+    # footer_reference empty only for the 40 clean images.
+    assert counts["footer_reference"] == 40
