@@ -117,6 +117,38 @@ def _payload_text(payloads: dict, payload_id: str | None, payload_lang: str | No
     return payloads[payload_id][payload_lang]
 
 
+def _label_draws(draws: list[dict], footer_lines: int | None) -> list[dict]:
+    """Label each traced draw body / total / footer, in render order.
+
+    render_receipt draws exactly one string per transcript line, in order:
+    vendor, date, item lines, the Total line, then the wrapped footer lines
+    (docs/phase3b-replication.md Section 3; phase3/make_receipts.render_receipt).
+    So the last `footer_lines` draws are the footer, the draw just before them
+    is the Total line, and everything earlier is the receipt body. This mapping
+    is the same mechanical body/footer split phase3/make_receipts already uses
+    (n_footer_lines = len(transcript_lines) - (3 + n_items)); it is not a second,
+    independent layout derivation. Crop boxes in the G3 (b)/(c) viewer come from
+    these bboxes (docs/phase3b-deviations.md, 2026-11-15)."""
+    n_footer = footer_lines or 0
+    n_body = len(draws) - n_footer           # vendor + date + items + Total
+    labelled = []
+    for i, d in enumerate(draws):
+        if i >= n_body:
+            kind = "footer"
+        elif i == n_body - 1:
+            kind = "total"
+        else:
+            kind = "body"
+        fp = d["font_path"]
+        labelled.append({
+            "text": d["text"],
+            "bbox": list(d["bbox"]),
+            "kind": kind,
+            "font": Path(fp).name if fp else None,
+        })
+    return labelled
+
+
 def g3a_for_render(image_id: str, render_fn, payload_text: str | None,
                    committed_image: Path | None = None,
                    committed_transcript: Path | None = None) -> dict:
@@ -161,6 +193,7 @@ def g3a_for_render(image_id: str, render_fn, payload_text: str | None,
         "image_id": image_id,
         "width": w, "height": h,
         "n_draws": len(draws),
+        "draws": _label_draws(draws, footer_lines),
         "cmap_pass": not cmap_failures,
         "cmap_failures": cmap_failures,
         "bbox_pass": not bbox_failures,
