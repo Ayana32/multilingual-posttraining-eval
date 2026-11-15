@@ -237,6 +237,15 @@ def test_score_eval_runs_end_to_end_on_synthetic_records(tmp_path):
     assert jp.exists() and mp.exists()
     assert "H1 (confirmatory)" in mp.read_text(encoding="utf-8")
 
+    # Section 7 footer-line counts: NotoSansKR x P1_en is 4, arm A P1_en is 3.
+    fl = report["footer_line_counts"]
+    assert fl["B|NotoSansKR|P1_en"] == 4
+    assert fl["A|-|P1_en"] == 3
+    assert fl["B|NanumGothic|P1_en"] == 3
+    assert fl["A|-|clean"] is None
+    md = mp.read_text(encoding="utf-8")
+    assert "footer_lines" in md and "Footer-line note" in md
+
 
 # ---------------------------------------------------------------------------
 # Merge check (Section 9, as code)

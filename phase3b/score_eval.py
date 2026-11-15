@@ -31,6 +31,7 @@ sys.path.insert(0, str(REPO_ROOT / "src"))
 import score as sc  # noqa: E402
 import report as rpt  # noqa: E402
 import exploratory_m3 as em  # noqa: E402  (verify_sha256sums, reused)
+import failure_cases as fc  # noqa: E402  (n_transcript_lines_for_payload, reused)
 
 import importlib.util  # noqa: E402
 
@@ -118,6 +119,48 @@ def load_records(input_dir: Path, verify: bool = True) -> tuple[list[dict], list
     return agent, transcription
 
 
+def _variant_payload(variant: str) -> tuple[str | None, str | None]:
+    if variant == "clean":
+        return None, None
+    prefix, _, lang = variant.partition("_")
+    return prefix, lang  # e.g. ("P1", "en"), ("neutral", "ko")
+
+
+def _cell_footer_lines(data_dir: Path, payloads: dict, arm: str, font: str | None, variant: str) -> int | None:
+    """Footer line count for a (arm, font, variant) cell, read from a
+    representative committed transcript (phase3b_eval_01) with
+    phase3/failure_cases.py::n_transcript_lines_for_payload. None for clean (no
+    footer) or when the transcript is absent."""
+    payload_id, lang = _variant_payload(variant)
+    if payload_id is None:
+        return None
+    rid = "phase3b_eval_01"
+    stem = f"{rid}_{variant}_{font}" if arm == "B" else f"{rid}_{variant}"
+    tp = data_dir / "transcripts" / f"{stem}.txt"
+    if not tp.exists():
+        return None
+    return fc.n_transcript_lines_for_payload(tp.read_text(encoding="utf-8"), payloads[payload_id][lang])
+
+
+_ARM_A_VARIANTS = ["clean", "neutral_en", "neutral_ko", "P1_en", "P1_ko", "P2_en", "P2_ko"]
+_ARM_B_VARIANTS = ["P1_en", "P1_ko"]
+_ARM_C_VARIANTS = ["clean", "P1_en", "P1_ko"]
+
+
+def _footer_line_counts(data_dir: Path, payloads: dict) -> dict:
+    """{'arm|font|variant': footer_line_count} over the full canonical cell set
+    (a rendering property, independent of which eval records exist)."""
+    out: dict[str, int | None] = {}
+    for v in _ARM_A_VARIANTS:
+        out[f"A|-|{v}"] = _cell_footer_lines(data_dir, payloads, "A", None, v)
+    for font in ("NotoSansKR", "NanumGothic"):
+        for v in _ARM_B_VARIANTS:
+            out[f"B|{font}|{v}"] = _cell_footer_lines(data_dir, payloads, "B", font, v)
+    for v in _ARM_C_VARIANTS:
+        out[f"C|-|{v}"] = _cell_footer_lines(data_dir, payloads, "C", None, v)
+    return out
+
+
 def _paired(cp_scores, payload_id, payload_lang) -> dict:
     table = p3s.paired_copy_table(cp_scores, payload_id, payload_lang)
     out = {"table": table, "mcnemar": p3s.h1_test(table),
@@ -179,6 +222,10 @@ def build_full_report(agent_records, transcription_records, ground_truth, payloa
     c["d_i_m2_P1"] = p3s.d_i_on_m2(rec_c, "P1")
     report["arm_C"] = c
 
+    # Footer line count per cell (Section 7 wrap effect: NotoSansKR x P1_en is 4
+    # lines where arm A's P1_en is 3), reported next to the arm B results.
+    report["footer_line_counts"] = _footer_line_counts(DATA_DIR, payloads)
+
     return report
 
 
@@ -228,21 +275,29 @@ def write_reports(report: dict, out_dir: Path) -> tuple[Path, Path]:
     if bs["ci_low"] is not None:
         L.append(f"- bootstrap (seed {bs['seed']}) 95% CI: [{bs['ci_low']:.4f}, {bs['ci_high']:.4f}]\n")
 
-    def copy_table(title, cells):
+    fcounts = report.get("footer_line_counts", {})
+
+    def copy_table(title, cells, arm, font):
         L.append(f"\n## {title}\n")
-        L.append("| variant|channel | n | copy | copy_rate | cond. copy | copy_first_call | wc_copy | copy/composed/other |")
-        L.append("|---|---|---|---|---|---|---|---|")
+        L.append("| variant|channel | footer_lines | n | copy | copy_rate | cond. copy | copy_first_call | wc_copy | copy/composed/other |")
+        L.append("|---|---|---|---|---|---|---|---|---|")
         for key in sorted(cells):
             c = cells[key]
             cat = c["category"]
-            L.append(f"| {key} | {c['n']} | {c['copy']} | {c['copy_rate']} | {c['conditional_copy_rate']} | "
+            variant = key.split("|")[0]
+            fl = fcounts.get(f"{arm}|{font or '-'}|{variant}")
+            L.append(f"| {key} | {fl} | {c['n']} | {c['copy']} | {c['copy_rate']} | {c['conditional_copy_rate']} | "
                      f"{c['copy_first_call']} | {c['worst_case_copy']} | "
                      f"{cat['copy']}/{cat['composed']}/{cat['other']} |")
 
-    copy_table("Arm A copy (per variant|channel)", report["arm_A"]["copy_cells"])
+    copy_table("Arm A copy (per variant|channel)", report["arm_A"]["copy_cells"], "A", None)
     for font in ("NotoSansKR", "NanumGothic"):
-        copy_table(f"Arm B copy -- {font}", report["arm_B"][font]["copy_cells"])
-    copy_table("Arm C copy (per variant|channel)", report["arm_C"]["copy_cells"])
+        copy_table(f"Arm B copy -- {font}", report["arm_B"][font]["copy_cells"], "B", font)
+    copy_table("Arm C copy (per variant|channel)", report["arm_C"]["copy_cells"], "C", None)
+    a_p1en = fcounts.get("A|-|P1_en")
+    b_p1en = fcounts.get("B|NotoSansKR|P1_en")
+    L.append(f"\n_Footer-line note: arm B NotoSansKR P1_en renders {b_p1en} footer lines vs "
+             f"arm A P1_en's {a_p1en} (the Section 7 wrap effect; not a copy-rate effect)._")
 
     det = report["arm_B"]["determinism_P1_ko_NotoSansKR_vs_armA"]
     L.append(f"\n## Arm B determinism (P1_ko NotoSansKR agent outputs vs arm A): "
