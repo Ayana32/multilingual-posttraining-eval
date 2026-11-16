@@ -11,21 +11,34 @@ tool-call bookkeeping and the Section 9 record schema -- and changes only
 the outcome mapping (Section 4):
 
     Phase 3                              -> v1
-    no <tool_call> block                 -> tool_calls empty and no
-                                            call-like JSON in content
+    no <tool_call> block                 -> 200 with tool_calls empty and
+                                            no call-like JSON in content
                                             (valid, zero calls)
-    malformed <tool_call> JSON           -> arguments is not valid JSON,
-                                            or the server returns a tool-
-                                            parser error (parse_failure)
-    untagged call-like JSON              -> tool_calls empty but content
-                                            holds name+arguments JSON
-                                            (parse_failure; reuse
+    malformed <tool_call> JSON           -> 200 whose tool_calls arguments
+                                            is not valid JSON
+                                            (parse_failure)
+    untagged call-like JSON              -> 200 with tool_calls empty but
+                                            content holds name+arguments
+                                            JSON (parse_failure; reuse
                                             contains_untagged_tool_call_json)
-    OOM / crash                          -> timeout, HTTP 5xx or a
-                                            connection error after retries,
-                                            or a non-tool-parser 4xx (401,
-                                            404, 400 context length)
-                                            (harness_error)
+    <tool_call> block leaked in content  -> 200 with tool_calls empty but
+                                            content holds a <tool_call>
+                                            block (reuse parse_tool_calls):
+                                            malformed block -> parse_failure;
+                                            well-formed block the server did
+                                            not surface -> valid, the calls
+                                            recovered and counted
+                                            (recovered_from_content), run
+                                            ends at that turn, S cannot judge
+    OOM / crash                          -> any HTTP error status, an
+                                            unreadable response envelope, or
+                                            a timeout / connection error
+                                            after retries (harness_error)
+
+    parse_failure is reserved for model tool-calling behaviour on a 200
+    response; every HTTP error (4xx or 5xx), unreadable envelope, timeout
+    or connection error is harness_error, so a config or server error is
+    never scored as the model's behaviour (docs/v1-changes.md, 2026-11-16).
 
 The multi-turn scoring rule is unchanged: tool calls from valid turns
 before a parse_failure stay on the record (phase3/harness.py's loop and
@@ -173,19 +186,23 @@ def _assistant_echo(content: str, raw_tool_calls: list[dict]) -> dict:
 # ---------------------------------------------------------------------------
 
 class _HarnessError(Exception):
-    """A transient failure that survived every retry -> harness_error."""
+    """A transport, server or config failure -> harness_error (Section 4),
+    never scored as model behaviour."""
 
     def __init__(self, message: str, retries: int) -> None:
         super().__init__(message)
         self.retries = retries
 
 
-def _post_chat(config: OpenAIAdapterConfig, payload: dict) -> tuple[requests.Response, float, int]:
-    """POSTs one chat-completions request. Retries only on a timeout,
-    connection error or HTTP 5xx (up to config.max_retries), returning
-    (response, latency_seconds, retries_used) for anything else -- a 2xx
-    or a 4xx (the 4xx is classified downstream, not retried). Raises
-    _HarnessError when a transient failure exhausts the retries."""
+def _post_chat(config: OpenAIAdapterConfig, payload: dict) -> tuple[dict, float, int]:
+    """POSTs one chat-completions request and returns (body, latency_seconds,
+    retries_used) for an HTTP 200 carrying a readable chat-completion
+    envelope. Retries a timeout, connection error or HTTP 5xx up to
+    config.max_retries. Raises _HarnessError for everything that is a
+    transport/server/config failure rather than model behaviour (Section 4):
+    a timeout/connection/5xx that exhausts the retries, any other HTTP error
+    status (e.g. 400/401/404, not retried), or a 200 whose body is not a
+    readable envelope with choices."""
     url = config.base_url.rstrip("/") + "/chat/completions"
     headers = {"Content-Type": "application/json"}
     if config.api_key:
@@ -209,7 +226,19 @@ def _post_chat(config: OpenAIAdapterConfig, payload: dict) -> tuple[requests.Res
                 continue
             raise _HarnessError(f"HTTP {response.status_code} after {retries} retries", retries)
 
-        return response, latency, retries
+        # Any other non-2xx is a config/request error, not model behaviour,
+        # and is not retried (Section 4).
+        if response.status_code >= 400:
+            raise _HarnessError(f"HTTP {response.status_code}", retries)
+
+        try:
+            body = response.json()
+        except ValueError as exc:
+            raise _HarnessError(f"unreadable response envelope: {exc}", retries)
+        if not isinstance(body, dict) or not body.get("choices"):
+            raise _HarnessError("unreadable response envelope: no choices", retries)
+
+        return body, latency, retries
 
 
 # ---------------------------------------------------------------------------
@@ -218,46 +247,23 @@ def _post_chat(config: OpenAIAdapterConfig, payload: dict) -> tuple[requests.Res
 
 @dataclass(frozen=True)
 class _TurnResult:
-    status: str  # "valid" | "parse_failure" | "harness_error"
+    status: str  # "valid" | "parse_failure"
     calls: list[dict]  # [{"name", "args"}], parsed from structured tool_calls
     content: str
     raw_tool_calls: list[dict]  # echoed verbatim into the next turn
     finish_reason: str | None
+    # calls recovered from a <tool_call> block in content (the server did
+    # not surface them as structured tool_calls) -> counted, run ends here.
+    recovered: bool = False
 
 
-# Substrings that identify an error envelope as coming from the server's
-# tool-call parser (Section 4: only a tool-parser error is parse_failure).
-_TOOL_PARSER_ERROR_SIGNALS = ("tool call", "tool_call", "tool-call", "tool parser", "toolparser")
-
-
-def _error_text(body: dict) -> str:
-    """Lower-cased text of an OpenAI-style error envelope ({"error": {...}}
-    or {"error": "..."}), for classifying what the error is."""
-    err = body.get("error")
-    if isinstance(err, dict):
-        fields = (err.get("message"), err.get("type"), err.get("code"), err.get("param"))
-        return " ".join(str(f) for f in fields if f).lower()
-    if isinstance(err, str):
-        return err.lower()
-    return ""
-
-
-def _is_tool_parser_error(body: dict) -> bool:
-    text = _error_text(body)
-    return any(signal in text for signal in _TOOL_PARSER_ERROR_SIGNALS)
-
-
-def _classify_response(status_code: int, body: dict) -> _TurnResult:
-    # A 4xx (not retried) or an OpenAI-style error envelope is classified by
-    # what it is (Section 4). Only an identifiable tool-parser error is a
-    # parse_failure; any other error -- 400 context length, 401 auth, 404
-    # unknown model, ... -- is a harness_error, not model tool-calling
-    # behaviour.
-    if status_code >= 400 or "error" in body:
-        if _is_tool_parser_error(body):
-            return _TurnResult("parse_failure", [], "", [], None)
-        return _TurnResult("harness_error", [], _error_text(body) or f"HTTP {status_code}", [], None)
-
+def _classify_response(body: dict) -> _TurnResult:
+    """Classifies a readable HTTP 200 chat-completion body (Section 4).
+    parse_failure is reserved for model tool-calling behaviour: tool_calls
+    whose arguments are not valid JSON, or content holding call-like JSON
+    with tool_calls empty. Every HTTP error, unreadable envelope, timeout
+    or connection error is a harness_error handled in _post_chat, never
+    here, so a config/server error is never scored as the model's output."""
     choice = body["choices"][0]
     message = choice.get("message") or {}
     content = message.get("content") or ""
@@ -278,6 +284,22 @@ def _classify_response(status_code: int, body: dict) -> _TurnResult:
                 return _TurnResult("parse_failure", [], content, raw_tool_calls, finish_reason)
             calls.append({"name": name, "args": args})
         return _TurnResult("valid", calls, content, raw_tool_calls, finish_reason)
+
+    # No structured tool_calls. If a <tool_call> block leaked into the
+    # content, the server's tool parser did not surface it as structured
+    # tool_calls -- run the Phase 3 text parser on the content.
+    tagged = _hz.parse_tool_calls(content)
+    if tagged is None:
+        # A <tool_call> block is present but is malformed JSON: parse_failure
+        # (the model attempted a call the server could not read).
+        return _TurnResult("parse_failure", [], content, raw_tool_calls, finish_reason)
+    if tagged:
+        # Well-formed <tool_call> block(s) in content. Phase 3 counted this
+        # exact text format, so we recover and count the calls to keep M1
+        # comparable, mark them recovered_from_content, and end the run at
+        # this turn (there is no server tool_call_id to echo a mock result
+        # against). The run stays "valid"; S is "cannot judge".
+        return _TurnResult("valid", tagged, content, raw_tool_calls, finish_reason, recovered=True)
 
     # No structured tool_calls: a call-shaped JSON object in the content is a
     # likely untagged call, never "valid, no call" (reuse the Phase 3 guard).
@@ -330,6 +352,7 @@ def run_agent_openai(
     outcome_status = "valid"
     parse_failure_turn: int | None = None
     harness_error_turn: int | None = None
+    recovered_call_turn: int | None = None
 
     total_retries = 0
     total_latency = 0.0
@@ -350,7 +373,7 @@ def run_agent_openai(
         rendered_prompt_sha256s.append(_hz.prompt_sha256_for_rendered(rendered, content_sha256))
 
         try:
-            response, latency, retries = _post_chat(config, payload)
+            body, latency, retries = _post_chat(config, payload)
         except _HarnessError as exc:
             total_retries += exc.retries
             raw_outputs.append(str(exc))
@@ -361,7 +384,6 @@ def run_agent_openai(
 
         total_retries += retries
         total_latency += latency
-        body = response.json()
         usage = body.get("usage") or {}
         prompt_tokens += int(usage.get("prompt_tokens") or 0)
         completion_tokens += int(usage.get("completion_tokens") or 0)
@@ -369,14 +391,9 @@ def run_agent_openai(
         system_fingerprint = body.get("system_fingerprint", system_fingerprint)
         observed_model = body.get("model", observed_model)
 
-        result = _classify_response(response.status_code, body)
+        result = _classify_response(body)
         raw_outputs.append(result.content)
         hit_max_new_tokens_per_turn.append(result.finish_reason == "length")
-
-        if result.status == "harness_error":
-            outcome_status = "harness_error"
-            harness_error_turn = turn
-            break
 
         if result.status == "parse_failure":
             outcome_status = "parse_failure"
@@ -384,8 +401,18 @@ def run_agent_openai(
             break
 
         for call in result.calls:
-            all_tool_calls.append({"turn": turn, "name": call["name"], "args": call["args"]})
+            entry = {"turn": turn, "name": call["name"], "args": call["args"]}
+            if result.recovered:
+                entry["recovered_from_content"] = True
+            all_tool_calls.append(entry)
             tool_log.record(call["name"], **call["args"])
+
+        if result.recovered:
+            # Recovered from a <tool_call> block in content: the calls are
+            # counted, but there is no server tool_call_id to echo a mock
+            # result against, so the run ends at this valid turn.
+            recovered_call_turn = turn
+            break
 
         if not result.calls:
             break  # valid, no calls this turn: conversation ends.
@@ -416,9 +443,14 @@ def run_agent_openai(
         "rendered_prompts": rendered_prompts,
         "rendered_prompt_sha256s": rendered_prompt_sha256s,
         "prompt_sha256": rendered_prompt_sha256s[0] if rendered_prompt_sha256s else None,
+        # What rendered_prompts contains: the serialized OpenAI chat-completions
+        # request payload (image base64 shrunk to its sha256), not a flat
+        # chat-template string.
+        "prompt_representation": "openai_request_payload",
         "outcome_status": outcome_status,
         "parse_failure_turn": parse_failure_turn,
         "harness_error_turn": harness_error_turn,
+        "recovered_call_turn": recovered_call_turn,
         "raw_output": raw_outputs,
         "hit_max_new_tokens_per_turn": hit_max_new_tokens_per_turn,
         "tool_calls": all_tool_calls,

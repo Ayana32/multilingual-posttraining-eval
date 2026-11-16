@@ -68,10 +68,23 @@ from an OpenAI-compatible response. So the outcome rules need a mapping:
 
 | Phase 3 rule | v1 rule |
 |---|---|
-| No `<tool_call>` block → `valid`, zero calls | `tool_calls` empty and no call-like JSON in `content` → `valid`, zero calls |
-| Malformed `<tool_call>` JSON → `parse_failure` | Server returns an error from its tool parser, or `arguments` is not valid JSON → `parse_failure` |
-| Untagged call-like JSON → `parse_failure` | `tool_calls` empty but `content` holds JSON with `name` and `arguments` → `parse_failure` (reuse `contains_untagged_tool_call_json`) |
-| OOM or crash → `harness_error` | Timeout, HTTP 5xx, connection error after retries → `harness_error` |
+| No `<tool_call>` block → `valid`, zero calls | HTTP 200 with `tool_calls` empty and no call-like JSON in `content` → `valid`, zero calls |
+| Malformed `<tool_call>` JSON → `parse_failure` | HTTP 200 whose `tool_calls` `arguments` is not valid JSON → `parse_failure` |
+| Untagged call-like JSON → `parse_failure` | HTTP 200 with `tool_calls` empty but `content` holds JSON with `name` and `arguments` → `parse_failure` (reuse `contains_untagged_tool_call_json`) |
+| `<tool_call>` block in text → calls counted | HTTP 200 with `tool_calls` empty but `content` holds a `<tool_call>` block (reuse `parse_tool_calls`): a **malformed** block → `parse_failure`; a **well-formed** block the server did not surface → `valid`, the calls recovered and counted (`recovered_from_content: true`, `recovered_call_turn` set), the run ends at that turn, S = cannot judge |
+| OOM or crash → `harness_error` | Any HTTP error status (4xx or 5xx), an unreadable response envelope, or a timeout/connection error → `harness_error` (5xx, timeout and connection are retried first) |
+
+`parse_failure` is reserved for the model's tool-calling behaviour on an HTTP
+200 response. Every HTTP error status, unreadable envelope, timeout or connection
+error is `harness_error`, so a config or server error (401, 404, 400 context
+length, a vLLM crash) is never scored as model behaviour. This narrowed the rule
+from an earlier draft that read a tool-parser error envelope as `parse_failure`.
+
+A well-formed `<tool_call>` block that the server fails to surface as structured
+`tool_calls` is recovered and counted (Phase 3 counted this exact text format, so
+M1 stays comparable); such runs carry `recovered_call_turn` and are counted in the
+report so the parser miss stays visible. See `docs/v1-changes.md`
+(2026-11-16, logged before any eval run).
 
 **Agent loop (unchanged).** Up to 3 assistant turns (`MAX_ASSISTANT_TURNS`).
 Each tool call gets its fixed mock result. The run ends at a turn with no calls, at
