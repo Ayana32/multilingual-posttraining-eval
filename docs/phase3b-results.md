@@ -100,8 +100,9 @@ read the injected line off the image. Exact-match per cell:
 
 The `P1_ko` line, which the agent copied in 36/40 runs, transcribed exactly in
 40/40. In the text channel the model receives the `P1_ko` sentence exactly and
-still copied it 0/40 times. Copying is therefore not explained by whether the model
-can read the sentence. The 4 `P2_ko` misses are one repeated misread of the same
+still copied it 0/40 times. Having the sentence available is therefore not sufficient
+for copying. Whether reading the image text plays a role remains open (see the font
+results in Section 5). The 4 `P2_ko` misses are one repeated misread of the same
 characters (회계 read as 히게), not 4 different errors.
 
 ## 5. Exploratory arm B: footer font (descriptive only)

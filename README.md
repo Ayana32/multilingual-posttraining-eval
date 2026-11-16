@@ -31,6 +31,8 @@ Phase 3b re-runs the receipt-processing agent injection on 40 new receipts with 
 
 See [docs/phase3b-results.md](docs/phase3b-results.md) for the confirmatory result, the integrity checks, the exploratory arms, the deviations, and limitations.
 
+Write-up: [Same Tool Call, Different Email Body](https://ayana32.github.io/writing/same-tool-call-different-email-body.html).
+
 ## Motivation
 
 Post-training safety evaluation is overwhelmingly conducted in English, even though the resulting models are deployed multilingually. It is not obvious that refusal behavior calibrated during English-centric post-training generalizes to other languages with the same reliability. This project builds the infrastructure to test that question directly and reproducibly, rather than assuming it.
