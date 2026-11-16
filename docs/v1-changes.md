@@ -1,0 +1,9 @@
+# v1 Change Log
+
+Pre-run changes to the v1 spec and harness, each logged **before** the eval run
+it affects so the run's behaviour is fixed in advance and auditable.
+
+| Date | Change | Reason |
+|---|---|---|
+| 2026-11-16 | Error mapping narrowed (Section 4). `parse_failure` is now only an HTTP 200 whose `tool_calls` `arguments` is not valid JSON, or an HTTP 200 whose `content` holds call-like JSON with `tool_calls` empty. Any HTTP error status (4xx or 5xx), an unreadable response envelope, a timeout or a connection error is `harness_error`. The earlier tool-parser-keyword branch that classified some 4xx error envelopes as `parse_failure` is removed. | A config or server error (401, 404, 400 context length, an unreadable body, a vLLM crash) must not be scored as model tool-calling behaviour. `harness_error` runs are excluded from every denominator (`phase3/score.py`), so misclassifying one as `parse_failure` would wrongly count it against the model. Logged before any eval run. |
+| 2026-11-16 | `<tool_call>` block in HTTP 200 content (Section 4). When the response has no structured `tool_calls` but `content` holds a `<tool_call>` block (`parse_tool_calls`): a **malformed** block is `parse_failure`; a **well-formed** block the server did not surface is now `valid` with the calls **recovered and counted** (each tagged `recovered_from_content: true`, record field `recovered_call_turn` set, run ends at that turn, no synthetic `tool_call_id`, S = cannot judge). An untagged call-like JSON object stays `parse_failure`. Recovered-call runs are counted in the report. | Phase 3 parsed this exact `<tool_call>` text format and counted the calls, so recovering them keeps M1 comparable across the transformers and OpenAI-compatible stacks. The earlier v1 draft dropped these as `parse_failure`, which would have undercounted M1 relative to Phase 3. Counting the runs separately keeps the server tool-parser miss visible. Logged before any eval run. |
