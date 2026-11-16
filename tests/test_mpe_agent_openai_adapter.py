@@ -227,6 +227,50 @@ def test_invalid_arguments_json_is_parse_failure():
     assert record["tool_calls"] == []
 
 
+def test_tool_parser_error_is_parse_failure():
+    """A 4xx whose error envelope identifies the server's tool-call parser
+    -> parse_failure (Section 4), not harness_error."""
+    fixtures = _load_fixtures()
+    row = _row("tune_01", "clean")
+    error_body = {"error": {
+        "message": "Failed to parse tool call from the model output",
+        "type": "BadRequestError",
+        "code": "invalid_tool_call",
+    }}
+    responses = [(400, error_body)]
+    with mock_openai_server(responses) as base_url:
+        record = run_agent_openai(row, "text", fixtures, _config(base_url), DATA_DIR)
+
+    assert record["outcome_status"] == "parse_failure"
+    assert record["parse_failure_turn"] == 1
+    assert record["harness_error_turn"] is None
+    assert record["tool_calls"] == []
+    assert record["retry_count"] == 0
+    assert s_label(record) == "cannot judge"
+
+
+def test_404_unknown_model_is_harness_error():
+    """A 404 (unknown model name) is not a tool-parser error, so it is a
+    harness_error, not parse_failure (Section 4). It is not retried."""
+    fixtures = _load_fixtures()
+    row = _row("tune_01", "clean")
+    error_body = {"error": {
+        "message": "The model `fake/model` does not exist.",
+        "type": "NotFoundError",
+        "code": "model_not_found",
+    }}
+    responses = [(404, error_body)]
+    with mock_openai_server(responses) as base_url:
+        record = run_agent_openai(row, "text", fixtures, _config(base_url), DATA_DIR)
+
+    assert record["outcome_status"] == "harness_error"
+    assert record["harness_error_turn"] == 1
+    assert record["parse_failure_turn"] is None
+    assert record["tool_calls"] == []
+    assert record["retry_count"] == 0
+    assert s_label(record) == "cannot judge"
+
+
 def test_persistent_5xx_is_harness_error_after_retries():
     """Timeout/5xx/connection error after retries -> harness_error; the
     run's retry_count reflects the exhausted retries (Section 4, Section 3)."""
@@ -243,3 +287,33 @@ def test_persistent_5xx_is_harness_error_after_retries():
     assert record["retry_count"] == 2
     assert record["tool_calls"] == []
     assert s_label(record) == "cannot judge"
+
+
+# ---------------------------------------------------------------------------
+# rendered_prompts: image base64 is stored as its sha256, reproducibly.
+# ---------------------------------------------------------------------------
+
+def test_image_rendered_prompt_stores_sha256_not_base64():
+    """On the image channel, rendered_prompts holds the image's sha256
+    instead of its base64, so the record stays small, and the prompt
+    fingerprint is reproducible across identical runs."""
+    fixtures = _load_fixtures()
+    row = _row("tune_01", "clean")
+
+    def run_once():
+        responses = [_chat_response(content="done")]  # no calls -> ends turn 1
+        with mock_openai_server(responses) as base_url:
+            return run_agent_openai(row, "image", fixtures, _config(base_url), DATA_DIR)
+
+    record = run_once()
+    rendered = record["rendered_prompts"][0]
+
+    # The shrunk marker is present and no long raw base64 blob survives.
+    assert "base64-sha256:" in rendered
+    assert "base64," not in rendered.replace("base64-sha256:", "")
+    assert len(rendered) < 2000
+
+    # Same image bytes -> same fingerprint (reproducible).
+    again = run_once()
+    assert again["rendered_prompts"][0] == rendered
+    assert again["prompt_sha256"] == record["prompt_sha256"]

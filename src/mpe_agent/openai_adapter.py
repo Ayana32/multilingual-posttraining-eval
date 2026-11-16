@@ -22,7 +22,9 @@ the outcome mapping (Section 4):
                                             (parse_failure; reuse
                                             contains_untagged_tool_call_json)
     OOM / crash                          -> timeout, HTTP 5xx or a
-                                            connection error after retries
+                                            connection error after retries,
+                                            or a non-tool-parser 4xx (401,
+                                            404, 400 context length)
                                             (harness_error)
 
 The multi-turn scoring rule is unchanged: tool calls from valid turns
@@ -113,6 +115,36 @@ def _to_openai_messages(messages: list[dict]) -> list[dict]:
     return [{"role": m["role"], "content": _to_openai_content(m["content"])} for m in messages]
 
 
+def _fingerprint_data_url(url: str) -> str:
+    """Replaces the base64 payload of an image data URL with its sha256, so
+    a stored rendered prompt stays small while remaining a reproducible
+    fingerprint of the exact image bytes sent (same bytes -> same digest)."""
+    prefix, sep, b64 = url.partition("base64,")
+    if not sep or not prefix.startswith("data:"):
+        return url
+    digest = hashlib.sha256(b64.encode("ascii")).hexdigest()
+    return f"{prefix}base64-sha256:{digest}"
+
+
+def _render_payload(payload: dict) -> dict:
+    """A copy of the request payload with every image base64 replaced by its
+    sha256, used only for the stored rendered_prompts (Section 9). The
+    request actually sent keeps the full base64."""
+    messages = []
+    for message in payload["messages"]:
+        content = message.get("content")
+        if isinstance(content, list):
+            new_content = []
+            for part in content:
+                if part.get("type") == "image_url":
+                    image_url = part["image_url"]
+                    part = {**part, "image_url": {**image_url, "url": _fingerprint_data_url(image_url["url"])}}
+                new_content.append(part)
+            message = {**message, "content": new_content}
+        messages.append(message)
+    return {**payload, "messages": messages}
+
+
 def _request_payload(config: OpenAIAdapterConfig, messages: list[dict], tools: list[dict]) -> dict:
     payload: dict[str, Any] = {
         "model": config.model_id,
@@ -186,19 +218,45 @@ def _post_chat(config: OpenAIAdapterConfig, payload: dict) -> tuple[requests.Res
 
 @dataclass(frozen=True)
 class _TurnResult:
-    status: str  # "valid" | "parse_failure"
+    status: str  # "valid" | "parse_failure" | "harness_error"
     calls: list[dict]  # [{"name", "args"}], parsed from structured tool_calls
     content: str
     raw_tool_calls: list[dict]  # echoed verbatim into the next turn
     finish_reason: str | None
 
 
+# Substrings that identify an error envelope as coming from the server's
+# tool-call parser (Section 4: only a tool-parser error is parse_failure).
+_TOOL_PARSER_ERROR_SIGNALS = ("tool call", "tool_call", "tool-call", "tool parser", "toolparser")
+
+
+def _error_text(body: dict) -> str:
+    """Lower-cased text of an OpenAI-style error envelope ({"error": {...}}
+    or {"error": "..."}), for classifying what the error is."""
+    err = body.get("error")
+    if isinstance(err, dict):
+        fields = (err.get("message"), err.get("type"), err.get("code"), err.get("param"))
+        return " ".join(str(f) for f in fields if f).lower()
+    if isinstance(err, str):
+        return err.lower()
+    return ""
+
+
+def _is_tool_parser_error(body: dict) -> bool:
+    text = _error_text(body)
+    return any(signal in text for signal in _TOOL_PARSER_ERROR_SIGNALS)
+
+
 def _classify_response(status_code: int, body: dict) -> _TurnResult:
-    # A non-2xx response that was not retried (a 4xx), or an OpenAI-style
-    # error envelope, is the server's tool parser / request rejecting the
-    # call -> parse_failure (Section 4).
+    # A 4xx (not retried) or an OpenAI-style error envelope is classified by
+    # what it is (Section 4). Only an identifiable tool-parser error is a
+    # parse_failure; any other error -- 400 context length, 401 auth, 404
+    # unknown model, ... -- is a harness_error, not model tool-calling
+    # behaviour.
     if status_code >= 400 or "error" in body:
-        return _TurnResult("parse_failure", [], "", [], None)
+        if _is_tool_parser_error(body):
+            return _TurnResult("parse_failure", [], "", [], None)
+        return _TurnResult("harness_error", [], _error_text(body) or f"HTTP {status_code}", [], None)
 
     choice = body["choices"][0]
     message = choice.get("message") or {}
@@ -285,7 +343,9 @@ def run_agent_openai(
         payload = _request_payload(config, oai_messages, tools)
         # The serialized request stands in for the "rendered prompt": a
         # reproducible per-turn fingerprint tied to the receipt content.
-        rendered = _hz.canonical_json(payload).decode("utf-8")
+        # Image base64 is replaced by its sha256 so the record stays small;
+        # the request sent below still carries the full base64.
+        rendered = _hz.canonical_json(_render_payload(payload)).decode("utf-8")
         rendered_prompts.append(rendered)
         rendered_prompt_sha256s.append(_hz.prompt_sha256_for_rendered(rendered, content_sha256))
 
@@ -312,6 +372,11 @@ def run_agent_openai(
         result = _classify_response(response.status_code, body)
         raw_outputs.append(result.content)
         hit_max_new_tokens_per_turn.append(result.finish_reason == "length")
+
+        if result.status == "harness_error":
+            outcome_status = "harness_error"
+            harness_error_turn = turn
+            break
 
         if result.status == "parse_failure":
             outcome_status = "parse_failure"
