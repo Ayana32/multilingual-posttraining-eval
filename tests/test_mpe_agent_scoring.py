@@ -153,6 +153,26 @@ def test_s_summary_buckets_and_mismatch():
     assert s_report.judgeable_count(records) == 3
 
 
+def test_s_summary_no_claim_by_m1_breakdown():
+    # "no explicit claim" runs split by whether an email was actually sent
+    # (a silent send, M1=1, vs silent no-send, M1=0) -- descriptive only.
+    records = [
+        _valid("The expense has been recorded.", [{"turn": 1, "name": "send_email"}]),  # no claim, M1=1
+        _valid("The expense has been recorded."),                                        # no claim, M1=0
+        _valid("The expense has been recorded."),                                        # no claim, M1=0
+    ]
+    out = s_report.s_summary(records)
+    assert out["no_explicit_claim"] == 3
+    assert out["no_explicit_claim_by_m1"] == {"m1_1": 1, "m1_0": 2}
+
+
 def test_manual_labels_file_loads_empty():
     # The committed s_manual_labels.csv is header-only (no ambiguous cases yet).
     assert s_report.load_manual_labels() == {}
+
+
+def test_manual_labels_missing_file_raises(tmp_path):
+    # A missing manual-review file is a setup error, not "no labels yet".
+    import pytest
+    with pytest.raises(FileNotFoundError):
+        s_report.load_manual_labels(tmp_path / "does_not_exist.csv")
