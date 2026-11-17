@@ -1,0 +1,101 @@
+"""v1 scoring/reporting tests (docs/v1-spec.md Sections 2-3).
+
+Two things are pinned here:
+
+1. The G1 regression (Section 1 / Step 4): re-scoring the STORED Phase 3
+   and 3b records with the v1 scorer reproduces every M1/M2/M3/TASK/CO
+   cell n/N in phase3_results.json / phase3b_results.json, bit for bit.
+   phase3 is one group; phase3b groups by each record's `arm` field; the
+   arm with no stored `measures` is skipped. The scorer is never adjusted
+   to match -- a divergence is a real failure.
+
+2. The new report helpers (`run_status_counts`, `paired_change`) on small
+   hand-written inputs, so their logic is checked without a model.
+"""
+from __future__ import annotations
+
+import json
+from collections import defaultdict
+from pathlib import Path
+
+from mpe_agent import scoring
+
+REPO_ROOT = Path(__file__).resolve().parent.parent
+MEASURES = ("M1", "M2", "M3", "TASK", "CO")
+
+
+def _load_dir(pattern):
+    recs = []
+    for f in sorted(REPO_ROOT.glob(pattern)):
+        recs += scoring.load_jsonl(f)
+    return recs
+
+
+def _assert_cells_match(observed, stored):
+    stored = stored or {}
+    assert set(observed) == set(stored)
+    for key in stored:
+        for m in MEASURES:
+            assert (observed[key][m]["k"], observed[key][m]["n"]) == \
+                   (stored[key][m]["k"], stored[key][m]["n"]), f"{key} {m}"
+
+
+def test_regression_phase3_cells_reproduced():
+    recs = _load_dir("report/phase3_eval/*/records.jsonl")
+    stored = json.loads((REPO_ROOT / "report/phase3_results/phase3_results.json").read_text())
+    assert len(recs) == stored["n_agent_records"]
+    gt = scoring.load_ground_truth()
+    observed = scoring.cells_with_wilson(scoring.score_records(recs, gt))
+    _assert_cells_match(observed, stored["primary_measures"]["cells"])
+
+
+def test_regression_phase3b_cells_reproduced():
+    recs = _load_dir("report/phase3b_eval/agent_*/records.jsonl")
+    stored = json.loads((REPO_ROOT / "report/phase3b_results/phase3b_results.json").read_text())
+    gt = scoring.load_ground_truth(REPO_ROOT / "phase3b/data/receipts.jsonl")
+    by_arm = defaultdict(list)
+    for r in recs:
+        by_arm[r["arm"]].append(r)
+    assert {a: len(by_arm[a]) for a in by_arm} == stored["n_by_arm"]
+    for arm in ("A", "B", "C"):
+        measures = stored.get(f"arm_{arm}", {}).get("measures")
+        if measures is None:  # arm B has no M1..CO cells
+            continue
+        observed = scoring.cells_with_wilson(scoring.score_records(by_arm[arm], gt))
+        _assert_cells_match(observed, measures["cells"])
+
+
+def test_run_status_counts():
+    recs = [
+        {"outcome_status": "valid"},
+        {"outcome_status": "valid", "recovered_call_turn": 2},
+        {"outcome_status": "parse_failure"},
+        {"outcome_status": "harness_error"},
+    ]
+    out = scoring.run_status_counts(recs, planned_runs=6)
+    assert out["by_status"] == {"valid": 2, "parse_failure": 1, "harness_error": 1}
+    assert out["observed"] == 4 and out["planned"] == 6 and out["missing"] == 2
+    assert out["recovered_call_count"] == 1
+
+
+def _score(receipt_id, channel, m1):
+    # Minimal RecordScore for paired_change; only the fields it reads are set.
+    return scoring.RecordScore(
+        receipt_id=receipt_id, receipt_set="s", variant="P1_en", payload_id="P1",
+        payload_lang="en", channel=channel, outcome_status="valid",
+        parse_failure_turn=None, excluded=False, M1=m1, M2=None, M3=None,
+        TASK=None, CO=None, worst_case_M1=m1,
+    )
+
+
+def test_paired_change_directions_and_dropped():
+    scores = [
+        _score("r1", "image", True), _score("r1", "text", True),    # unchanged
+        _score("r2", "image", True), _score("r2", "text", False),   # lost
+        _score("r3", "image", False), _score("r3", "text", True),   # gained
+        _score("r4", "image", True),                                # dropped: no text
+    ]
+    out = scoring.paired_change(scores, "M1", "image", "text")
+    assert out["n_pairs"] == 3
+    assert out["directions"] == {"gained": 1, "lost": 1, "unchanged": 1}
+    assert out["n_dropped"] == 1 and out["dropped"][0]["reason"] == "missing_condition"
