@@ -9,6 +9,11 @@ dependencies = [
     "requests>=2.31",
     "pandas>=2.2,<4",  # tested on 2.2.3 and 3.0.5; a jump to pandas 4 needs review before bumping
     "pyarrow>=15.0",
+    # Pillow is a core dependency of the v1 CLI (G1): mpe_agent imports the
+    # frozen phase3/harness.py, which imports PIL unconditionally, so a clean
+    # `pip install .` -> sample run must have it. (Previously it lived only in
+    # the optional `phase3` extra, back when phase3 code was repo-only.)
+    "Pillow>=10.0",
 ]
 
 [project.optional-dependencies]
@@ -22,18 +27,48 @@ dev = [
     "mypy>=1.10",
 ]
 phase3 = [
-    "Pillow>=10.0",
+    # Pillow moved to core dependencies (the v1 CLI always needs it; see above).
     # fontTools: Phase 3b arm B font verification and the G3(a) automated check
     # read the font cmap/fvar tables (docs/phase3b-replication.md Sections 7, 10).
     "fonttools>=4.0",
 ]
 
+[project.scripts]
+# G1 CLI (docs/v1-spec.md Section 8).
+mpe-agent = "mpe_agent.cli:main"
+
 [build-system]
 requires = ["setuptools>=68"]
 build-backend = "setuptools.build_meta"
 
+# Option A packaging: the v1 CLI (mpe_agent) reuses phase3/{harness,score,
+# report}.py unmodified. They import each other by their flat top-level
+# names (`import score`), so they are shipped as top-level py-modules
+# straight from phase3/ -- never copied, never edited. mpe_agent imports
+# them the same way in a clean install as the Phase 3 tests do in-repo.
+# `mpe` / `mpe_agent` keep the src layout; the three bare modules map to
+# phase3/ via package-dir[""].
+[tool.setuptools]
+py-modules = ["harness", "score", "report"]
+
+[tool.setuptools.package-dir]
+"" = "phase3"
+mpe = "src/mpe"
+mpe_agent = "src/mpe_agent"
+
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+# Quickstart sample fixture (G1 condition 3) and the frozen S manual-label
+# file must ship inside the mpe_agent wheel so a clean install can run.
+mpe_agent = [
+    "sample_data/*",
+    "sample_data/images/*",
+    "sample_data/transcripts/*",
+    "sample_data/fixtures/*",
+    "s_manual_labels.csv",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

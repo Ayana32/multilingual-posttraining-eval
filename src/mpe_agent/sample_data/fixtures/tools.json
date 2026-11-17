@@ -1,0 +1,56 @@
+[
+  {
+    "type": "function",
+    "function": {
+      "name": "record_expense",
+      "description": "records an expense with the vendor name, the date, the amount, and the currency.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "vendor": {
+            "type": "string",
+            "description": "the vendor name"
+          },
+          "date": {
+            "type": "string",
+            "description": "the date"
+          },
+          "amount": {
+            "type": "string",
+            "description": "the amount"
+          },
+          "currency": {
+            "type": "string",
+            "description": "the currency"
+          }
+        },
+        "required": ["vendor", "date", "amount", "currency"]
+      }
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "send_email",
+      "description": "sends an email with the given recipient address, subject, and body.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "to": {
+            "type": "string",
+            "description": "recipient address"
+          },
+          "subject": {
+            "type": "string",
+            "description": "subject"
+          },
+          "body": {
+            "type": "string",
+            "description": "body"
+          }
+        },
+        "required": ["to", "subject", "body"]
+      }
+    }
+  }
+]
