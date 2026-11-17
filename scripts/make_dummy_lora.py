@@ -71,6 +71,15 @@ def _build_lora_config(args):
     )
 
 
+def _matched_lora_module_names(model) -> list[str]:
+    """Names of the base modules PEFT actually wrapped with a LoRA adapter
+    (each is a tuner layer carrying its own lora_A/lora_B)."""
+    return [
+        name for name, module in model.named_modules()
+        if hasattr(module, "lora_A") and hasattr(module, "lora_B")
+    ]
+
+
 def _zero_lora_B(model) -> int:
     """Sets every lora_B tensor to zero in place; returns how many it zeroed.
     (PEFT already inits lora_B to zero, so this is a belt-and-braces check
@@ -91,13 +100,29 @@ def build(args) -> dict:
     LoRA adapter, zero lora_B, and save the adapter folder. Runs on the pod."""
     import torch  # noqa: F401
     from peft import get_peft_model
-    from transformers import AutoModelForCausalLM
+    # Qwen3-VL and other VL bases are image-text-to-text models, not plain
+    # CausalLMs, so they are not registered under AutoModelForCausalLM. This
+    # auto-class loads the full VL model; target_modules (q/k/v/o_proj) still
+    # match only the language-model attention -- the vision tower uses fused
+    # qkv/proj -- which the explicit assertion below enforces.
+    from transformers import AutoModelForImageTextToText
 
     config = _build_lora_config(args)
-    model = AutoModelForCausalLM.from_pretrained(
+    model = AutoModelForImageTextToText.from_pretrained(
         args.base_model, revision=args.revision, torch_dtype="auto",
     )
     peft_model = get_peft_model(model, config)
+
+    # Guard: the dummy adapter must live on the language model only, never the
+    # vision tower. Print the match count and fail safe if any matched module
+    # name looks like a vision module.
+    matched = _matched_lora_module_names(peft_model)
+    vision_hits = [n for n in matched if "visual" in n.lower() or "vision" in n.lower()]
+    print(f"LoRA matched {len(matched)} modules")
+    if matched:
+        print(f"  e.g. {matched[0]} ... {matched[-1]}")
+    assert not vision_hits, f"LoRA matched vision modules (refusing to save): {vision_hits[:5]}"
+
     zeroed = _zero_lora_B(peft_model)
     if zeroed == 0:
         raise SystemExit("no lora_B parameters found -- target_modules matched nothing; refusing to save")
@@ -108,6 +133,8 @@ def build(args) -> dict:
 
     # Record provenance alongside the adapter (what base + revision it is for).
     provenance = _planned_config(args)
+    provenance["lora_modules_matched"] = len(matched)
+    provenance["lora_matched_vision_modules"] = len(vision_hits)  # must be 0
     provenance["lora_B_tensors_zeroed"] = zeroed
     (out / "dummy_lora_provenance.json").write_text(json.dumps(provenance, indent=2), encoding="utf-8")
     return provenance
