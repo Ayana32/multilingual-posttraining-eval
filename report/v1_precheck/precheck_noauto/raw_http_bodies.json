@@ -1,0 +1,8 @@
+[
+  {
+    "label": "expect_config_error_text",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 400,
+    "body_text": "{\"error\":{\"message\":\"\\\"auto\\\" tool choice requires --enable-auto-tool-choice and --tool-call-parser to be set\",\"type\":\"BadRequestError\",\"param\":null,\"code\":400}}"
+  }
+]

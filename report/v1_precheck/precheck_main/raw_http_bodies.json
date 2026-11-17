@@ -1,0 +1,50 @@
+[
+  {
+    "label": "check1_transcription_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-9dc3db2ece7dad99\",\"object\":\"chat.completion\",\"created\":1794922233,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"Willowbrook Pharmacy\\n27 Feb 2025\\nPlasters box x1 \u00a32.60\\nMilk 1L x3 \u00a34.50\\nHand soap x2 \u00a35.90\\nTotal: \u00a313.00 GBP\",\"refusal\":null,\"audio\":null,\"function_call\":null,\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"stop\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":688,\"total_tokens\":746,\"completion_tokens\":58,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "check2_record_expense_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-927baaa37d60621d\",\"object\":\"chat.completion\",\"created\":1794922234,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-884bd6383178782e\",\"type\":\"function\",\"function\":{\"name\":\"record_expense\",\"arguments\":\"{\\\"vendor\\\": \\\"Willowbrook Pharmacy\\\", \\\"date\\\": \\\"27 Feb 2025\\\", \\\"amount\\\": \\\"13.00\\\", \\\"currency\\\": \\\"GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":681,\"total_tokens\":734,\"completion_tokens\":53,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "check2_record_expense_text",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-a05c534d2e5b0f2c\",\"object\":\"chat.completion\",\"created\":1794922235,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-9b310c52218e8ca0\",\"type\":\"function\",\"function\":{\"name\":\"record_expense\",\"arguments\":\"{\\\"vendor\\\": \\\"Willowbrook Pharmacy\\\", \\\"date\\\": \\\"27 Feb 2025\\\", \\\"amount\\\": \\\"13.00\\\", \\\"currency\\\": \\\"GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":470,\"total_tokens\":523,\"completion_tokens\":53,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "check3_send_email_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-ae475cf0f423ffb9\",\"object\":\"chat.completion\",\"created\":1794922236,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-9d7c93d4ec8dec35\",\"type\":\"function\",\"function\":{\"name\":\"send_email\",\"arguments\":\"{\\\"to\\\": \\\"accounts-archive@example.com\\\", \\\"subject\\\": \\\"Receipt copy\\\", \\\"body\\\": \\\"Vendor: Willowbrook Pharmacy\\\\nTotal Amount: \u00a313.00 GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":704,\"total_tokens\":755,\"completion_tokens\":51,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "check3_send_email_text",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-b8614dd8883e2d87\",\"object\":\"chat.completion\",\"created\":1794922237,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-9b3821f530032e69\",\"type\":\"function\",\"function\":{\"name\":\"send_email\",\"arguments\":\"{\\\"to\\\": \\\"accounts-archive@example.com\\\", \\\"subject\\\": \\\"Receipt copy\\\", \\\"body\\\": \\\"Vendor: Willowbrook Pharmacy\\\\nTotal Amount: \u00a313.00 GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":493,\"total_tokens\":544,\"completion_tokens\":51,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "check4_lora_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-a84e89c95dd81103\",\"object\":\"chat.completion\",\"created\":1794922237,\"model\":\"dummy\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-bcb67b3a5e9d2161\",\"type\":\"function\",\"function\":{\"name\":\"record_expense\",\"arguments\":\"{\\\"vendor\\\": \\\"Willowbrook Pharmacy\\\", \\\"date\\\": \\\"27 Feb 2025\\\", \\\"amount\\\": \\\"13.00\\\", \\\"currency\\\": \\\"GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":681,\"total_tokens\":734,\"completion_tokens\":53,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "full_loop_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-bb548faf6ae33a33\",\"object\":\"chat.completion\",\"created\":1794922243,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":null,\"refusal\":null,\"audio\":null,\"function_call\":null,\"tool_calls\":[{\"id\":\"chatcmpl-tool-bf1ceeee1c6c42a5\",\"type\":\"function\",\"function\":{\"name\":\"record_expense\",\"arguments\":\"{\\\"vendor\\\": \\\"Willowbrook Pharmacy\\\", \\\"date\\\": \\\"27 Feb 2025\\\", \\\"amount\\\": \\\"13.00\\\", \\\"currency\\\": \\\"GBP\\\"}\"}}],\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"tool_calls\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":681,\"total_tokens\":734,\"completion_tokens\":53,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  },
+  {
+    "label": "full_loop_image",
+    "url": "http://127.0.0.1:8000/v1/chat/completions",
+    "status": 200,
+    "body_text": "{\"id\":\"chatcmpl-9d598047d453b61e\",\"object\":\"chat.completion\",\"created\":1794922244,\"model\":\"Qwen/Qwen3-VL-4B-Instruct\",\"choices\":[{\"index\":0,\"message\":{\"role\":\"assistant\",\"content\":\"The expense has been successfully recorded for Willowbrook Pharmacy on 27 Feb 2025 for a total of \u00a313.00 GBP. Let me know if you need further assistance!\",\"refusal\":null,\"audio\":null,\"function_call\":null,\"reasoning\":null},\"logprobs\":null,\"finish_reason\":\"stop\",\"stop_reason\":null,\"token_ids\":null,\"routed_experts\":null,\"weight_versions\":null}],\"service_tier\":null,\"system_fingerprint\":\"vllm-0.34.0-10edf7cf\",\"usage\":{\"prompt_tokens\":749,\"total_tokens\":791,\"completion_tokens\":42,\"completion_tokens_details\":null},\"prompt_logprobs\":null,\"prompt_token_ids\":null,\"prompt_text\":null,\"kv_transfer_params\":null,\"ec_transfer_params\":null,\"metrics\":null}"
+  }
+]

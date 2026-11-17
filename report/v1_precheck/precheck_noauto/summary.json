@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-11-17T13:27:06.196953+00:00",
+  "base_url": "http://127.0.0.1:8000/v1",
+  "model": "Qwen/Qwen3-VL-4B-Instruct",
+  "lora_name": null,
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "receipt_id": "tune_01",
+  "spec": "docs/v1-spec.md Section 5",
+  "mode": "expect_config_error",
+  "checks": {
+    "expect_config_error": {
+      "channel": "text",
+      "pass": true,
+      "detail": {
+        "outcome_status": "harness_error",
+        "harness_error_turn": 1,
+        "raw_output": [
+          "HTTP 400"
+        ]
+      }
+    }
+  }
+}
