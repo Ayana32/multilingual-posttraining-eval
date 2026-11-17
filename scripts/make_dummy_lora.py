@@ -33,14 +33,14 @@ from pathlib import Path
 
 _COMMIT_HASH = re.compile(r"^[0-9a-f]{40}$")
 
-# Attention + MLP projections: the standard LoRA targets for a decoder /
-# VL decoder stack. lora_B starts at zero in PEFT, so with this left at its
-# init the adapter is already identity; we additionally hard-zero lora_B
-# after construction as a guarantee that does not depend on PEFT internals.
-DEFAULT_TARGET_MODULES = [
-    "q_proj", "k_proj", "v_proj", "o_proj",
-    "gate_proj", "up_proj", "down_proj",
-]
+# Language-model attention projections ONLY -- never the vision tower.
+# Check 4 tests the LoRA serving path, and v1 trains the LM, not the vision
+# encoder. In Qwen3-VL the vision blocks use fused `qkv`/`proj` (and their
+# own MLP names), so these suffixes match the text decoder's attention
+# layers and nothing in the vision tower. lora_B starts at zero in PEFT, so
+# the adapter is already identity; we additionally hard-zero lora_B after
+# construction as a guarantee that does not depend on PEFT internals.
+DEFAULT_TARGET_MODULES = ["q_proj", "k_proj", "v_proj", "o_proj"]
 
 
 def _planned_config(args) -> dict:
