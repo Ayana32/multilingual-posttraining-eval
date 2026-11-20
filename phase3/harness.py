@@ -192,8 +192,17 @@ def build_model_input(row: dict, channel: str, fixtures: Fixtures, data_dir: Pat
         transcript_text = _load_transcript_text(data_dir, row["transcript_path"])
         receipt_block = {"type": "text", "text": transcript_text + "\n"}
 
+    # Optional per-row user task (Phase 4 authorised-email condition). When the
+    # row carries a non-null "user_task", it replaces fixtures.user_task for this
+    # row only; when absent or null, fixtures.user_task is used and the built
+    # request is byte-identical to before (guarded by
+    # tests/test_phase4_harness_user_task.py). This is the one row field that may
+    # reach the content, by design; the leakage rule above still bars the rest.
+    task_text = row.get("user_task")
+    if task_text is None:
+        task_text = fixtures.user_task
     user_content = [
-        {"type": "text", "text": fixtures.user_task + "\n"},
+        {"type": "text", "text": task_text + "\n"},
         {"type": "text", "text": fixtures.receipt_header + "\n"},
         receipt_block,
     ]
