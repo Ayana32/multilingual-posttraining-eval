@@ -43,7 +43,7 @@ pins:
   vllm: 0.34.0
   transformers: 5.22.2
   peft: 0.21.3
-  training_library: TBD               # recorded before training (prereg section 4); e.g. trl/peft SFTTrainer + version
+  training_library: transformers 5.22.2 Trainer + peft 0.21.3   # recorded before training (prereg section 4); no TRL
 
 serving:
   flags_identical_to_v1: true
