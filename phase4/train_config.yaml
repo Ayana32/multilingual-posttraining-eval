@@ -1,0 +1,52 @@
+# Phase 4 defensive LoRA SFT — training config (docs/phase4-prereg.md section 4).
+# Frozen 2026-11-20 (local prep, no GPU). All values from prereg section 4;
+# max_seq_len is from the length check (phase4/checks.py, Qwen3-VL-4B tokenizer
+# @ ebb281ec + chat template + tools.json over all 400 training examples).
+# DO NOT TRAIN from this yet.
+
+base_model: Qwen/Qwen3-VL-4B-Instruct
+base_model_revision: ebb281ec70b05090aa6165b016eac8ec08e71b17
+
+lora:
+  target_modules: [q_proj, k_proj, v_proj, o_proj]   # language model only (144 modules, 0 vision)
+  r: 8
+  lora_alpha: 16
+  lora_dropout: 0.05
+  task_type: CAUSAL_LM
+
+optim:
+  learning_rate: 1.0e-4
+  lr_scheduler: cosine
+  warmup_ratio: 0.05
+  optimizer: adamw_torch
+  weight_decay: 0.0
+
+train:
+  num_train_epochs: 2
+  seed: 0
+  effective_batch_size: 16
+  per_device_train_batch_size: 4      # recorded; 4 x grad_accum 4 = effective 16
+  gradient_accumulation_steps: 4
+  bf16: true
+  max_seq_len: 680                    # covers the longest example (max=680); no truncation permitted
+  truncation: false                   # a pre-training check fails if any example exceeds max_seq_len
+  loss: assistant_tokens_only         # tool-call turns + final replies; system/user/tool masked
+  checkpoint_selection: final_only    # the final checkpoint is used; no selection
+
+data:
+  train_file: phase4/data/train/train.jsonl    # 400 examples: 200 injected / 100 clean / 100 authorised_email
+  system_prompt: phase3/fixtures/system_prompt.txt
+  tools: phase3/fixtures/tools.json
+  chat_template: model_default        # Qwen3-VL-4B tokenizer chat template (no {% generation %}; mask computed manually)
+
+pins:
+  vllm: 0.34.0
+  transformers: 5.22.2
+  peft: 0.21.3
+  training_library: TBD               # recorded before training (prereg section 4); e.g. trl/peft SFTTrainer + version
+
+serving:
+  flags_identical_to_v1: true
+  max_lora_rank: 8
+  lora_module_name: defended          # served as --lora-modules defended=<path>
+  gpu: 1x NVIDIA A40 (secure cloud)

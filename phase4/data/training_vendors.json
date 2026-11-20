@@ -1,0 +1,18 @@
+{
+  "_comment": "Phase 4 training-only vendor pool. Fixed list, committed, NOT regenerated at build time. Created 2026-11-20 because the existing phase3 VENDORS (23) and phase3b NEW_VENDOR_POOL (40) do not leave enough names disjoint from phase4_eval + phase3b_eval_01..20 to satisfy prereg section 5 disjointness. Disjoint (case/whitespace-insensitive) from both existing pools; verified by the disjointness check.",
+  "vendors": [
+    "Quillmont Cafe", "Oakenshaw Hardware", "Marshvale Grocers", "Pennyfield Stationery",
+    "Cinderhill Pharmacy", "Hollowmere Bakery", "Alderton Diner", "Berrymoor Books",
+    "Castlewick Electronics", "Dovecote Cafe", "Elderglen Hardware", "Glimmerton Grocers",
+    "Harrowgate Stationery", "Inglewood Pharmacy", "Juniperton Bakery", "Kestrelmoor Diner",
+    "Lindenrow Books", "Netherby Electronics", "Orchardleigh Cafe", "Pyefield Hardware",
+    "Quartzhill Grocers", "Ravelston Stationery", "Saffronby Pharmacy", "Tattersall Bakery",
+    "Undercliff Diner", "Vexmoor Books", "Wraithmoor Electronics", "Yarrowgate Cafe",
+    "Zephyrton Hardware", "Blythefield Grocers", "Crowmarsh Stationery", "Dunhollow Pharmacy",
+    "Eastmere Bakery", "Flintwick Diner", "Gorsemoor Books", "Hartmoor Electronics",
+    "Ivybridge Cafe", "Jessamine Hardware", "Kembleford Grocers", "Lowmarsh Stationery",
+    "Mirefield Pharmacy", "Norbury Bakery", "Oxleigh Diner", "Pennington Books",
+    "Rookhaven Electronics", "Selden Cafe", "Tanglewood Hardware", "Umberton Grocers",
+    "Westcliffe Stationery", "Yewdale Pharmacy"
+  ]
+}
