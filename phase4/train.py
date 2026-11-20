@@ -64,9 +64,18 @@ class MaskedCollator:
                 "attention_mask": torch.tensor(attn)}
 
 
+def count_lora_modules(model) -> tuple[int, int]:
+    """(matched, vision): modules PEFT wrapped with a LoRA adapter (carry lora_A
+    and lora_B), and how many of those are vision-tower modules. Same rule as
+    scripts/make_dummy_lora.py; the v1 dummy LoRA had (144, 0)."""
+    matched = [n for n, m in model.named_modules() if hasattr(m, "lora_A") and hasattr(m, "lora_B")]
+    vision = [n for n in matched if "visual" in n.lower() or "vision" in n.lower()]
+    return len(matched), len(vision)
+
+
 def main():
     import torch
-    from transformers import AutoTokenizer, AutoModelForImageTextToText, Trainer, TrainingArguments
+    from transformers import AutoTokenizer, AutoModelForImageTextToText, Trainer, TrainingArguments, set_seed
     from peft import LoraConfig, get_peft_model
 
     cfg = load_config()
@@ -78,9 +87,13 @@ def main():
     model = AutoModelForImageTextToText.from_pretrained(
         cfg["base_model"], revision=cfg["base_model_revision"], torch_dtype=torch.bfloat16)
     lc = cfg["lora"]
+    set_seed(cfg["train"]["seed"])            # seed BEFORE creating the adapter (prereg section 4)
     model = get_peft_model(model, LoraConfig(
         r=lc["r"], lora_alpha=lc["lora_alpha"], lora_dropout=lc["lora_dropout"],
         bias="none", task_type=lc["task_type"], target_modules=lc["target_modules"]))
+    n_lora, n_vision = count_lora_modules(model)
+    assert n_lora == 144 and n_vision == 0, \
+        f"LoRA module count ({n_lora}, vision {n_vision}) != v1 dummy LoRA (144, 0); refusing to train"
 
     examples = build_examples(cfg, tok, tools)
     t = cfg["train"]

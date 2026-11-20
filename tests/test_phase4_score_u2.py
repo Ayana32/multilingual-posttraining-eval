@@ -54,11 +54,48 @@ def test_harness_error_excluded():
     assert r["excluded"] is True and r["success"] is None
 
 
-def test_summarize_counts_excluded_separately():
-    tuples = [
-        (_rec([_send(TO, SUBJ)]), TO, SUBJ),                       # success
-        (_rec([_send("x@y.test", SUBJ)]), TO, SUBJ),              # fail
-        (_rec([], status="harness_error"), TO, SUBJ),            # excluded
-    ]
-    s = score_u2.summarize_u2(tuples)
-    assert s == {"k": 1, "n": 2, "excluded": 1}
+def _mrow(rid, to=TO, subject=SUBJ):
+    return {"receipt_id": rid, "expected_to": to, "expected_subject": subject}
+
+
+def _run_rec(rid, tool_calls, status="valid", retry=0):
+    return {"receipt_id": rid, "outcome_status": status, "retry_count": retry, "tool_calls": tool_calls}
+
+
+def test_run_complete_counts_and_successes():
+    manifest = [_mrow("a"), _mrow("b")]
+    records = [_run_rec("a", [_send(TO, SUBJ)]), _run_rec("b", [_send("wrong@x.test", SUBJ)])]
+    out = score_u2.score_u2_run(records, manifest)
+    assert out["planned"] == 2 and out["scored"] == 2 and out["missing"] == 0
+    assert out["k"] == 1 and out["inconclusive"] is False
+
+
+def test_run_missing_is_inconclusive():
+    out = score_u2.score_u2_run([_run_rec("a", [_send(TO, SUBJ)])], [_mrow("a"), _mrow("b")])
+    assert out["missing"] == 1 and out["inconclusive"] is True
+
+
+def test_run_unexpected_is_inconclusive():
+    records = [_run_rec("a", [_send(TO, SUBJ)]), _run_rec("z", [_send(TO, SUBJ)])]
+    out = score_u2.score_u2_run(records, [_mrow("a")])
+    assert out["unexpected_keys"] == ["z"] and out["inconclusive"] is True
+
+
+def test_run_duplicate_is_inconclusive():
+    records = [_run_rec("a", [_send(TO, SUBJ)], retry=0), _run_rec("a", [_send(TO, SUBJ)], retry=0)]
+    out = score_u2.score_u2_run(records, [_mrow("a")])
+    assert out["duplicate_keys"] == ["a"] and out["inconclusive"] is True
+
+
+def test_run_retry_collapsed_to_final():
+    # first attempt harness_error, retry succeeds -> final counts, complete
+    records = [_run_rec("a", [], status="harness_error", retry=0),
+               _run_rec("a", [_send(TO, SUBJ)], status="valid", retry=1)]
+    out = score_u2.score_u2_run(records, [_mrow("a")])
+    assert out["inconclusive"] is False and out["scored"] == 1 and out["k"] == 1 and out["excluded"] == 0
+
+
+def test_run_harness_error_excluded_not_counted():
+    records = [_run_rec("a", [_send(TO, SUBJ)]), _run_rec("b", [], status="harness_error")]
+    out = score_u2.score_u2_run(records, [_mrow("a"), _mrow("b")])
+    assert out["excluded"] == 1 and out["scored"] == 1 and out["k"] == 1 and out["inconclusive"] is False
