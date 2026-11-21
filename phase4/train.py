@@ -73,9 +73,34 @@ def count_lora_modules(model) -> tuple[int, int]:
     return len(matched), len(vision)
 
 
+def build_training_args(cfg: dict, output_dir=None):
+    """The exact TrainingArguments phase4/train.py trains with, built from the
+    frozen config. Extracted so a CPU test can assert the pinned transformers
+    accepts every argument (tests/test_phase4_trainingargs_build.py). main()
+    builds its args through this same function, so the two cannot drift."""
+    from transformers import TrainingArguments
+    t = cfg["train"]
+    return TrainingArguments(
+        output_dir=str(output_dir if output_dir is not None else REPO / "runs" / "phase4_adapter"),
+        num_train_epochs=t["num_train_epochs"],
+        per_device_train_batch_size=t["per_device_train_batch_size"],
+        gradient_accumulation_steps=t["gradient_accumulation_steps"],
+        learning_rate=cfg["optim"]["learning_rate"],
+        lr_scheduler_type=cfg["optim"]["lr_scheduler"],
+        warmup_steps=3,  # transformers 5.22.2 dropped warmup_ratio; prereg 5% warmup = ceil(0.05*50)=3 of 50 steps (docs/v1-changes.md)
+        weight_decay=cfg["optim"]["weight_decay"],
+        optim="adamw_torch",
+        bf16=t["bf16"],
+        seed=t["seed"],
+        save_strategy="no",       # final checkpoint only; no selection (prereg section 4)
+        logging_steps=10,
+        report_to=[],
+    )
+
+
 def main():
     import torch
-    from transformers import AutoTokenizer, AutoModelForImageTextToText, Trainer, TrainingArguments, set_seed
+    from transformers import AutoTokenizer, AutoModelForImageTextToText, Trainer, set_seed
     from peft import LoraConfig, get_peft_model
 
     cfg = load_config()
@@ -96,23 +121,7 @@ def main():
         f"LoRA module count ({n_lora}, vision {n_vision}) != v1 dummy LoRA (144, 0); refusing to train"
 
     examples = build_examples(cfg, tok, tools)
-    t = cfg["train"]
-    args = TrainingArguments(
-        output_dir=str(REPO / "runs" / "phase4_adapter"),
-        num_train_epochs=t["num_train_epochs"],
-        per_device_train_batch_size=t["per_device_train_batch_size"],
-        gradient_accumulation_steps=t["gradient_accumulation_steps"],
-        learning_rate=cfg["optim"]["learning_rate"],
-        lr_scheduler_type=cfg["optim"]["lr_scheduler"],
-        warmup_steps=3,  # transformers 5.22.2 dropped warmup_ratio; prereg 5% warmup = ceil(0.05*50)=3 of 50 steps (docs/v1-changes.md)
-        weight_decay=cfg["optim"]["weight_decay"],
-        optim="adamw_torch",
-        bf16=t["bf16"],
-        seed=t["seed"],
-        save_strategy="no",       # final checkpoint only; no selection (prereg section 4)
-        logging_steps=10,
-        report_to=[],
-    )
+    args = build_training_args(cfg)
     trainer = Trainer(model=model, args=args, train_dataset=examples,
                       data_collator=MaskedCollator(tok.pad_token_id or tok.eos_token_id))
     # Pre-training: confirm the planned optimizer-step count from the real dataloader
