@@ -17,7 +17,10 @@ jobs:
           python-version: "3.12"
 
       - name: Install dependencies
-        run: pip install -e ".[dev,phase3]" torch
+        # transformers==5.22.2 is the training pin (phase4/train_config.yaml); it is
+        # installed so test_phase4_trainingargs_build.py guards TrainingArguments
+        # against the exact pinned version. accelerate is needed to build them.
+        run: pip install -e ".[dev,phase3]" torch "transformers==5.22.2" accelerate
 
       - name: Run test suite (network-free)
         run: pytest -ra -m "not network"
