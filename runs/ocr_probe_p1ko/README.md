@@ -48,8 +48,10 @@ Phase 3b copy metric.)
 | ascii_email | 20/20 | [0.839, 1.000] | 20/20 | 0.000 |
 | ascii_subject | 20/20 | [0.839, 1.000] | 20/20 | 0.000 |
 
-Outcome: KO_high. The 4B transcribes the injected Korean line verbatim every time, so
-its `copy = 0/20` on the P1_ko image cell is behavioural, not an OCR limit.
+Outcome: KO_high. In a separate transcription task the 4B read the injected Korean
+line exactly in 20/20 images (NotoSansKR). So "the model cannot read the line" is not
+supported for this font. How the line is processed during the agent task was not
+measured.
 
 ### Font scope
 These arm-A images render the Korean footer in the font **NotoSansKR**
@@ -102,11 +104,7 @@ All three receipts render to the same dimensions, so vLLM encodes each as the sa
 number of image tokens. Each P1_ko receipt image costs 272 vLLM prompt tokens.
 
 ### Relation to the image-pad count
-The 272 here is the aggregate `prompt_tokens` difference measured through vLLM. It is
-2 more than the 270 image-placeholder tokens counted directly from the HF processor,
-which were verified for these same 560x480 images two ways: the grid formula
-`image_grid_thw (1, 30, 36)` gives `1*30*36 / merge(2)^2 = 270`, and the actual count
-of `<|image_pad|>` (token id 151655) in the processor `input_ids` is 270. The 2-token
-difference is the `<|vision_start|>` and `<|vision_end|>` markers the chat template
-places around the image placeholder, which are included in vLLM's `prompt_tokens` but
-not in the image-pad count.
+The 272 is the aggregate `prompt_tokens` difference measured through vLLM in this
+session (291 with the image minus 19 without). The run recorded only aggregate
+`prompt_tokens`, not token ids. 272 is consistent with 270 image-pad tokens plus 2
+vision boundary tokens; the token-level composition was not recorded.
