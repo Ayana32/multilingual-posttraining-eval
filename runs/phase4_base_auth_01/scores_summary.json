@@ -1,0 +1,54 @@
+{
+  "cells": {
+    "clean|text|None": {
+      "CO": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M1": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M2": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M3": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 20,
+        "n": 20
+      }
+    }
+  },
+  "ground_truth_path": "/workspace/multilingual-posttraining-eval/phase4/data/eval/receipts.jsonl",
+  "n_records": 20,
+  "run_status": {
+    "by_status": {
+      "harness_error": 0,
+      "parse_failure": 0,
+      "valid": 20
+    },
+    "missing": null,
+    "observed": 20,
+    "planned": null,
+    "recovered_call_count": 0
+  }
+}

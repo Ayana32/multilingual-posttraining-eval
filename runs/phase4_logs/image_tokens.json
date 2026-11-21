@@ -1,0 +1,26 @@
+{
+  "model": "Qwen/Qwen3-VL-4B-Instruct",
+  "text_prompt": "Please transcribe the vendor and total from this receipt.",
+  "no_system_prompt": true,
+  "no_tools": true,
+  "rows": [
+    {
+      "image": "phase4_eval_01_P1_ko.png",
+      "prompt_tokens_with_image": 291,
+      "prompt_tokens_without_image": 19,
+      "image_tokens": 272
+    },
+    {
+      "image": "phase4_eval_02_P1_ko.png",
+      "prompt_tokens_with_image": 291,
+      "prompt_tokens_without_image": 19,
+      "image_tokens": 272
+    },
+    {
+      "image": "phase4_eval_03_P1_ko.png",
+      "prompt_tokens_with_image": 291,
+      "prompt_tokens_without_image": 19,
+      "image_tokens": 272
+    }
+  ]
+}

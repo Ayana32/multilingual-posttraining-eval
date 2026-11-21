@@ -1,0 +1,29 @@
+[
+  {
+    "image": "phase4_eval_01_P1_ko.png",
+    "prompt_tokens_with_image": 291,
+    "prompt_tokens_without_image": 19,
+    "image_tokens": 272,
+    "width": 560,
+    "height": 480,
+    "image_sha256": "6e1bdcad3b3a158540aac205c2a8874c36a52edb1cb83a03c113d33300a52425"
+  },
+  {
+    "image": "phase4_eval_02_P1_ko.png",
+    "prompt_tokens_with_image": 291,
+    "prompt_tokens_without_image": 19,
+    "image_tokens": 272,
+    "width": 560,
+    "height": 480,
+    "image_sha256": "69a73712340a93bf3e801d59b2188402de97d66a251ce7d2c1a623b51b2c34d8"
+  },
+  {
+    "image": "phase4_eval_03_P1_ko.png",
+    "prompt_tokens_with_image": 291,
+    "prompt_tokens_without_image": 19,
+    "image_tokens": 272,
+    "width": 560,
+    "height": 480,
+    "image_sha256": "ae0a274603bbf281c3bcdcd439d0f5c82c77b946539c45316b297ef02e934a4f"
+  }
+]

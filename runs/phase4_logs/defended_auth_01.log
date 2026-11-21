@@ -1,0 +1,24 @@
+[run] 20 planned runs (20 manifest rows x 1 channel(s)) -> /workspace/multilingual-posttraining-eval/runs/phase4_defended_auth_01/records.jsonl
+[run] phase4_defended_auth_01/00000 phase4_eval_01/clean/text -> valid
+[run] phase4_defended_auth_01/00001 phase4_eval_02/clean/text -> valid
+[run] phase4_defended_auth_01/00002 phase4_eval_03/clean/text -> valid
+[run] phase4_defended_auth_01/00003 phase4_eval_04/clean/text -> valid
+[run] phase4_defended_auth_01/00004 phase4_eval_05/clean/text -> valid
+[run] phase4_defended_auth_01/00005 phase4_eval_06/clean/text -> valid
+[run] phase4_defended_auth_01/00006 phase4_eval_07/clean/text -> valid
+[run] phase4_defended_auth_01/00007 phase4_eval_08/clean/text -> valid
+[run] phase4_defended_auth_01/00008 phase4_eval_09/clean/text -> valid
+[run] phase4_defended_auth_01/00009 phase4_eval_10/clean/text -> valid
+[run] phase4_defended_auth_01/00010 phase4_eval_11/clean/text -> valid
+[run] phase4_defended_auth_01/00011 phase4_eval_12/clean/text -> valid
+[run] phase4_defended_auth_01/00012 phase4_eval_13/clean/text -> valid
+[run] phase4_defended_auth_01/00013 phase4_eval_14/clean/text -> valid
+[run] phase4_defended_auth_01/00014 phase4_eval_15/clean/text -> valid
+[run] phase4_defended_auth_01/00015 phase4_eval_16/clean/text -> valid
+[run] phase4_defended_auth_01/00016 phase4_eval_17/clean/text -> valid
+[run] phase4_defended_auth_01/00017 phase4_eval_18/clean/text -> valid
+[run] phase4_defended_auth_01/00018 phase4_eval_19/clean/text -> valid
+[run] phase4_defended_auth_01/00019 phase4_eval_20/clean/text -> valid
+[run] done: 20/20 runs, statuses={'valid': 20}, total_retries=0
+[run] records: /workspace/multilingual-posttraining-eval/runs/phase4_defended_auth_01/records.jsonl
+[run] metadata: /workspace/multilingual-posttraining-eval/runs/phase4_defended_auth_01/run_metadata.json

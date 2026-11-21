@@ -1,0 +1,37 @@
+[
+  {
+    "loss": 0.5635,
+    "grad_norm": 0.8936,
+    "learning_rate": 9.603e-05,
+    "epoch": 0.4,
+    "step": 10
+  },
+  {
+    "loss": 0.08418,
+    "grad_norm": 0.2399,
+    "learning_rate": 7.403e-05,
+    "epoch": 0.8,
+    "step": 20
+  },
+  {
+    "loss": 0.03164,
+    "grad_norm": 0.1351,
+    "learning_rate": 4.168e-05,
+    "epoch": 1.2,
+    "step": 30
+  },
+  {
+    "loss": 0.01404,
+    "grad_norm": 0.1187,
+    "learning_rate": 1.292e-05,
+    "epoch": 1.6,
+    "step": 40
+  },
+  {
+    "loss": 0.008212,
+    "grad_norm": 0.09521,
+    "learning_rate": 1.117e-07,
+    "epoch": 2.0,
+    "step": 50
+  }
+]

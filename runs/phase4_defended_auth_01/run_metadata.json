@@ -1,0 +1,40 @@
+{
+  "backend": "openai-compatible",
+  "backend_version": null,
+  "base_url": "http://127.0.0.1:8000/v1",
+  "channels": [
+    "text"
+  ],
+  "code_provenance": {
+    "harness": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/harness.py",
+      "sha256": "9ed9bf756762fbd397b6acfa27ae0c8d0e6cb2c7a97066fbcf3cde0762a0956e"
+    },
+    "report": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/report.py",
+      "sha256": "86a708d6318548a0e5f686efd527652b3ede7c06484a5ddc75ceb614be7424e2"
+    },
+    "score": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/score.py",
+      "sha256": "b9d16cc26b3b3562034abd6ca69a9dfa44c86aeca1e7d63408b6c6353b82ccba"
+    }
+  },
+  "data_dir": "/workspace/multilingual-posttraining-eval/phase4/data/eval",
+  "fixtures_dir": "/workspace/multilingual-posttraining-eval/phase3/fixtures",
+  "ground_truth_path": "/workspace/multilingual-posttraining-eval/phase4/data/eval/receipts.jsonl",
+  "manifest_path": "/workspace/multilingual-posttraining-eval/runs/phase4_authorised_email_manifest.jsonl",
+  "manifest_rows": 20,
+  "max_tokens": 1024,
+  "model_id": "defended",
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "observed_runs": 20,
+  "planned_runs": 20,
+  "run_name": "phase4_defended_auth_01",
+  "sample": false,
+  "seed": null,
+  "status_tally": {
+    "valid": 20
+  },
+  "temperature": 0.0,
+  "total_retries": 0
+}
