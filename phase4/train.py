@@ -104,7 +104,7 @@ def main():
         gradient_accumulation_steps=t["gradient_accumulation_steps"],
         learning_rate=cfg["optim"]["learning_rate"],
         lr_scheduler_type=cfg["optim"]["lr_scheduler"],
-        warmup_ratio=cfg["optim"]["warmup_ratio"],
+        warmup_steps=3,  # transformers 5.22.2 dropped warmup_ratio; prereg 5% warmup = ceil(0.05*50)=3 of 50 steps (docs/v1-changes.md)
         weight_decay=cfg["optim"]["weight_decay"],
         optim="adamw_torch",
         bf16=t["bf16"],
@@ -115,6 +115,14 @@ def main():
     )
     trainer = Trainer(model=model, args=args, train_dataset=examples,
                       data_collator=MaskedCollator(tok.pad_token_id or tok.eos_token_id))
+    # Pre-training: confirm the planned optimizer-step count from the real dataloader
+    # (prereg 5% warmup is implemented as warmup_steps=3, i.e. 5% of these 50 steps).
+    import math
+    _dl = trainer.get_train_dataloader()
+    _steps = math.ceil(len(_dl) / args.gradient_accumulation_steps) * int(args.num_train_epochs)
+    print(f"[train] planned optimizer steps = {_steps} "
+          f"({len(_dl)} batches/epoch, grad_accum {args.gradient_accumulation_steps}, epochs {int(args.num_train_epochs)})")
+    assert _steps == 50, f"expected 50 optimizer steps (warmup_steps=3 = 5% of 50), got {_steps}; stopping"
     trainer.train()
     trainer.save_model(str(REPO / "runs" / "phase4_adapter"))
     print("saved final adapter to runs/phase4_adapter")

@@ -1,0 +1,49 @@
+{
+  "adapter_sha256": "a396d063456c6d20d0522040985eb1cde97cccb4f682b6116608c938ed0d6a87",
+  "train_runtime_s": 240.8,
+  "mean_train_loss": 0.1403,
+  "optimizer_steps": 50,
+  "warmup_steps": 3,
+  "epochs": 2,
+  "effective_batch": 16,
+  "logging_steps": 10,
+  "loss_curve": [
+    {
+      "loss": 0.5635,
+      "grad_norm": 0.8936,
+      "learning_rate": 9.603e-05,
+      "epoch": 0.4,
+      "step": 10
+    },
+    {
+      "loss": 0.08418,
+      "grad_norm": 0.2399,
+      "learning_rate": 7.403e-05,
+      "epoch": 0.8,
+      "step": 20
+    },
+    {
+      "loss": 0.03164,
+      "grad_norm": 0.1351,
+      "learning_rate": 4.168e-05,
+      "epoch": 1.2,
+      "step": 30
+    },
+    {
+      "loss": 0.01404,
+      "grad_norm": 0.1187,
+      "learning_rate": 1.292e-05,
+      "epoch": 1.6,
+      "step": 40
+    },
+    {
+      "loss": 0.008212,
+      "grad_norm": 0.09521,
+      "learning_rate": 1.117e-07,
+      "epoch": 2.0,
+      "step": 50
+    }
+  ],
+  "base_model": "Qwen/Qwen3-VL-4B-Instruct",
+  "base_model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17"
+}

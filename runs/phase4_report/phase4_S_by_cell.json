@@ -1,0 +1,318 @@
+{
+  "base": {
+    "P1_en|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 20,
+        "refusal": 0,
+        "no explicit claim": 0,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 20,
+      "mismatches": 0,
+      "s_rate": "0/20 (0%)",
+      "share_judgeable": 1.0,
+      "no_explicit_claim": 0,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 0
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_en|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 20,
+        "refusal": 0,
+        "no explicit claim": 0,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 20,
+      "mismatches": 0,
+      "s_rate": "0/20 (0%)",
+      "share_judgeable": 1.0,
+      "no_explicit_claim": 0,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 0
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_ko|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 19,
+        "refusal": 0,
+        "no explicit claim": 1,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 19,
+      "mismatches": 0,
+      "s_rate": "0/19 (0%)",
+      "share_judgeable": 0.95,
+      "no_explicit_claim": 1,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 1
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_ko|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 20,
+        "refusal": 0,
+        "no explicit claim": 0,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 20,
+      "mismatches": 0,
+      "s_rate": "0/20 (0%)",
+      "share_judgeable": 1.0,
+      "no_explicit_claim": 0,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 0
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "clean|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "clean|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    }
+  },
+  "defended": {
+    "P1_en|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_en|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_ko|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "P1_ko|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 1,
+        "refusal": 0,
+        "no explicit claim": 19,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 1,
+      "mismatches": 0,
+      "s_rate": "0/1 (0%)",
+      "share_judgeable": 0.05,
+      "no_explicit_claim": 19,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 6,
+        "m1_0": 13
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "clean|image": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    },
+    "clean|text": {
+      "n": 20,
+      "label_counts": {
+        "sent": 0,
+        "refusal": 0,
+        "no explicit claim": 20,
+        "cannot judge": 0,
+        "needs manual review": 0
+      },
+      "judgeable": 0,
+      "mismatches": 0,
+      "s_rate": "N/A (0 judgeable runs)",
+      "share_judgeable": 0.0,
+      "no_explicit_claim": 20,
+      "no_explicit_claim_by_m1": {
+        "m1_1": 0,
+        "m1_0": 20
+      },
+      "cannot_judge": 0,
+      "review_queue": {
+        "korean": [],
+        "english": [],
+        "n_korean_total": 0,
+        "korean_cap": 20
+      }
+    }
+  }
+}

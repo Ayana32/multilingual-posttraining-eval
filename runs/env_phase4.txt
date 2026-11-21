@@ -1,0 +1,10 @@
+date: 2026-11-21T06:35:38Z
+git_commit: 2684a7f6aa302d73946423b9db7eb8fbf8e9b8f0
+torch: 2.14.0+cu130
+cuda_available: True
+cuda_version: 13.0
+transformers: 5.22.2
+peft: 0.21.3
+vllm: 0.34.0
+accelerate: 1.16.0
+NVIDIA A40, 595.112.07

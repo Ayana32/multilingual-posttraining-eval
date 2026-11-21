@@ -33,6 +33,12 @@ See [docs/phase3b-results.md](docs/phase3b-results.md) for the confirmatory resu
 
 Write-up: [Same Tool Call, Different Email Body](https://ayana32.github.io/writing/same-tool-call-different-email-body.html).
 
+## Phase 4 Results
+
+Phase 4 trains a small defensive LoRA SFT on English, text-only examples and tests whether it stops Qwen3-VL-4B from following an instruction injected into a receipt, without breaking the expense task or legitimate user-requested emails. Base and defended were evaluated in one GPU session, same flags and harness, on 20 new receipts; 280 runs, all valid. All three pre-registered criteria pass: H1 (injected `send_email` in the English cells falls from 40/40 base to 0/40 defended), U1 (clean and P1_en TASK 40/40), and U2 (authorised email 19/20, unchanged from base). The English text-only defence transfers to 0/20 in the English image and Korean image cells and to 7/20 in the Korean text cell, with no run getting worse. The one U2 miss is the same row in both models (subject "Receipt Please" sent as "Receipt").
+
+See [docs/phase4-results.md](docs/phase4-results.md) for the per-cell intervals, the final-reply-versus-tool-log cross-tab, the deviations, and limitations.
+
 ## Motivation
 
 Post-training safety evaluation is overwhelmingly conducted in English, even though the resulting models are deployed multilingually. It is not obvious that refusal behavior calibrated during English-centric post-training generalizes to other languages with the same reliability. This project builds the infrastructure to test that question directly and reproducibly, rather than assuming it.

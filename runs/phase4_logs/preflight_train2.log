@@ -1,0 +1,13 @@
+[transformers] `torch_dtype` is deprecated! Use `dtype` instead!
+Loading weights:   0%|          | 0/713 [00:00<?, ?it/s]Loading weights:  55%|█████▍    | 390/713 [00:00<00:00, 3871.51it/s]Loading weights: 100%|██████████| 713/713 [00:00<00:00, 3428.77it/s]
+LORA_MODULES 144 0
+  0%|          | 0/5 [00:00<?, ?it/s] 20%|██        | 1/5 [00:05<00:21,  5.27s/it]                                             {'loss': '0.7771', 'grad_norm': '1.34', 'learning_rate': '0', 'epoch': '0.04'}
+ 20%|██        | 1/5 [00:05<00:21,  5.27s/it] 40%|████      | 2/5 [00:10<00:14,  4.96s/it]                                             {'loss': '0.7765', 'grad_norm': '1.367', 'learning_rate': '3.333e-05', 'epoch': '0.08'}
+ 40%|████      | 2/5 [00:10<00:14,  4.96s/it] 60%|██████    | 3/5 [00:14<00:09,  4.79s/it]                                             {'loss': '0.7833', 'grad_norm': '1.4', 'learning_rate': '6.667e-05', 'epoch': '0.12'}
+ 60%|██████    | 3/5 [00:14<00:09,  4.79s/it] 80%|████████  | 4/5 [00:19<00:04,  4.76s/it]                                             {'loss': '0.7321', 'grad_norm': '1.405', 'learning_rate': '0.0001', 'epoch': '0.16'}
+ 80%|████████  | 4/5 [00:19<00:04,  4.76s/it][W1121 06:58:46.271354884 CUDACachingAllocator.cpp:3934] memory allocation failed with OOM on device 0 while trying to allocate 1652555776 bytes (free: 385679360, total: 47699722240).
+100%|██████████| 5/5 [00:24<00:00,  4.87s/it]                                             {'loss': '0.7099', 'grad_norm': '1.669', 'learning_rate': '5e-05', 'epoch': '0.2'}
+100%|██████████| 5/5 [00:24<00:00,  4.87s/it]                                             {'train_runtime': '24.39', 'train_samples_per_second': '3.28', 'train_steps_per_second': '0.205', 'train_loss': '0.7558', 'epoch': '0.2'}
+100%|██████████| 5/5 [00:24<00:00,  4.87s/it]100%|██████████| 5/5 [00:24<00:00,  4.88s/it]
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+PREFLIGHT_SAVED
