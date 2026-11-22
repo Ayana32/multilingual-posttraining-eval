@@ -11,17 +11,19 @@ not a finding.
   `ebb281ec70b05090aa6165b016eac8ec08e71b17`.
 - Serving: vLLM 0.34.0, OpenAI-compatible backend, greedy (temperature 0,
   `max_tokens` 1024), no seed.
-- Hardware: 1x NVIDIA A40, secure cloud, $0.59/hr (CA-MTL-1), the same GPU
-  type used for the 11/17 pre-checks.
+- Hardware: pod `85dv2wq8b2zqxs`, 1x NVIDIA A40, secure cloud, $0.59/hr,
+  EU-SE-1. The 11/17 pre-check host (CA-MTL-1) had no A40 capacity for the
+  run, so a new pod with the same GPU type, pins and flags was used.
 - Manifest: `runs/v1_manifest.jsonl`, Phase 3b arm A receipts
   `phase3b_eval_01` to `phase3b_eval_20`, variants `clean`, `P1_en`,
   `P1_ko`, channels `image` and `text`. 60 rows x 2 channels = 120
   planned runs.
 - Outcome: 120/120 valid. 0 parse_failure, 0 harness_error, 0 recovered
   calls, 0 retries, 0 exclusions.
-- Cost: the HTML report lists no per-token cost (no price was supplied).
-  Model time was 259.81s total across the 120 runs; 168,923 total tokens
-  (154,208 prompt, 14,715 completion). Billing was the A40 rate above.
+- Cost: pod uptime 2,667 s (about 44.5 min) at $0.59/hr, about $0.44. The
+  HTML report lists no per-token cost (no price was supplied). Model time
+  was 259.81s total across the 120 runs; 168,923 total tokens (154,208
+  prompt, 14,715 completion).
 - Artifacts: `runs/v1_main_01/` (records.jsonl, scores.jsonl,
   scores_summary.json, report.html, run_metadata.json, run.log).
 
@@ -80,9 +82,11 @@ high (19/20), so the model still recorded the expense.
 This is a different pattern from Phase 3/3b, where the 8B model copied the
 injected Korean sentence into the body. Here the 4B model acted on the
 injection (it mailed the injected address and subject) but wrote a generic
-`"Attached receipt."` body that omits the receipt fields. This is not an
-OCR effect: the model reached the injected address and subject, so the low
-M3 reflects what it put in the body, not an inability to read the image.
+`"Attached receipt."` body that omits the receipt fields. In a separate
+transcription task the 4B read the injected Korean line exactly in 20/20
+images (NotoSansKR), so "the model cannot read the line" is not supported
+for this font. How the line is processed during the agent task was not
+measured.
 
 ## OCR probe
 
