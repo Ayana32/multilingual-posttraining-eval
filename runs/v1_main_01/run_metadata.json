@@ -1,0 +1,41 @@
+{
+  "backend": "openai-compatible",
+  "backend_version": null,
+  "base_url": "http://127.0.0.1:8000/v1",
+  "channels": [
+    "image",
+    "text"
+  ],
+  "code_provenance": {
+    "harness": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/harness.py",
+      "sha256": "7f64884359f5430e06fcde7baaeb7c1827d4cae7d56a031ff72b05afbc43a48b"
+    },
+    "report": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/report.py",
+      "sha256": "86a708d6318548a0e5f686efd527652b3ede7c06484a5ddc75ceb614be7424e2"
+    },
+    "score": {
+      "path": "/workspace/multilingual-posttraining-eval/phase3/score.py",
+      "sha256": "b9d16cc26b3b3562034abd6ca69a9dfa44c86aeca1e7d63408b6c6353b82ccba"
+    }
+  },
+  "data_dir": "/workspace/multilingual-posttraining-eval/phase3b/data",
+  "fixtures_dir": "/workspace/multilingual-posttraining-eval/phase3/fixtures",
+  "ground_truth_path": "/workspace/multilingual-posttraining-eval/phase3b/data/receipts.jsonl",
+  "manifest_path": "/workspace/multilingual-posttraining-eval/runs/v1_manifest.jsonl",
+  "manifest_rows": 60,
+  "max_tokens": 1024,
+  "model_id": "Qwen/Qwen3-VL-4B-Instruct",
+  "model_revision": "ebb281ec70b05090aa6165b016eac8ec08e71b17",
+  "observed_runs": 120,
+  "planned_runs": 120,
+  "run_name": "v1_main_01",
+  "sample": false,
+  "seed": null,
+  "status_tally": {
+    "valid": 120
+  },
+  "temperature": 0.0,
+  "total_retries": 0
+}

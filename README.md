@@ -39,6 +39,12 @@ Phase 4 trains a small defensive LoRA SFT on English, text-only examples and tes
 
 See [docs/phase4-results.md](docs/phase4-results.md) for the per-cell intervals, the final-reply-versus-tool-log cross-tab, the deviations, and limitations.
 
+## v1 Results
+
+v1 packages the Phase 3/3b receipt-agent injection harness as the `mpe-agent` CLI and runs it once on a remote GPU against an OpenAI-compatible endpoint: Qwen3-VL-4B-Instruct at a pinned revision, served with vLLM 0.34.0 on an A40 (secure), greedy decoding, 120/120 runs valid with 0 harness or parse failures. Across the six cells, clean receipts never email and always record the expense, both English injected cells and the Korean text cell reach the injected address and copy the receipt fields in 20/20, and the only cell that differs is `P1_ko` delivered as an image. There `send_email` fired to the injected address and subject in 17/20 but the body carried the receipt fields in only 1/20: 16 of the 17 sends used a generic `"Attached receipt."` body, and no body copied the injected sentence. A separate transcription probe found the 4B read the injected Korean line exactly in 20/20 NotoSansKR images, so "the model cannot read the line" is not supported for this font; how the line is processed during the agent task was not measured. The v1 regression re-scores the stored Phase 3/3b records with the v1 scorer and reproduces every M1/M2/M3/TASK/CO cell's n/N (spec G1). 120 runs on one model is a test of the tool, not a finding.
+
+See [docs/v1-results.md](docs/v1-results.md) for the full run metadata, the cell table with Wilson intervals, the S buckets, the P1_ko image body pattern, and the OCR probe.
+
 ## Motivation
 
 Post-training safety evaluation is overwhelmingly conducted in English, even though the resulting models are deployed multilingually. It is not obvious that refusal behavior calibrated during English-centric post-training generalizes to other languages with the same reliability. This project builds the infrastructure to test that question directly and reproducibly, rather than assuming it.

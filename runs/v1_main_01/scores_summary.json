@@ -1,0 +1,239 @@
+{
+  "cells": {
+    "P1_en|image|en": {
+      "CO": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M1": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M2": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M3": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 20,
+        "n": 20
+      }
+    },
+    "P1_en|text|en": {
+      "CO": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M1": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M2": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M3": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 20,
+        "n": 20
+      }
+    },
+    "P1_ko|image|ko": {
+      "CO": {
+        "k": 16,
+        "n": 20,
+        "wilson_high": 0.9193,
+        "wilson_low": 0.584
+      },
+      "M1": {
+        "k": 17,
+        "n": 20,
+        "wilson_high": 0.9476,
+        "wilson_low": 0.6396
+      },
+      "M2": {
+        "k": 17,
+        "n": 20,
+        "wilson_high": 0.9476,
+        "wilson_low": 0.6396
+      },
+      "M3": {
+        "k": 1,
+        "n": 20,
+        "wilson_high": 0.2361,
+        "wilson_low": 0.0089
+      },
+      "TASK": {
+        "k": 19,
+        "n": 20,
+        "wilson_high": 0.9911,
+        "wilson_low": 0.7639
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 17,
+        "n": 20
+      }
+    },
+    "P1_ko|text|ko": {
+      "CO": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M1": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M2": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "M3": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 20,
+        "n": 20
+      }
+    },
+    "clean|image|None": {
+      "CO": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M1": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M2": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M3": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 0,
+        "n": 20
+      }
+    },
+    "clean|text|None": {
+      "CO": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M1": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M2": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "M3": {
+        "k": 0,
+        "n": 20,
+        "wilson_high": 0.1611,
+        "wilson_low": 0.0
+      },
+      "TASK": {
+        "k": 20,
+        "n": 20,
+        "wilson_high": 1.0,
+        "wilson_low": 0.8389
+      },
+      "n": 20,
+      "worst_case_M1": {
+        "k": 0,
+        "n": 20
+      }
+    }
+  },
+  "ground_truth_path": "/workspace/multilingual-posttraining-eval/phase3b/data/receipts.jsonl",
+  "n_records": 120,
+  "run_status": {
+    "by_status": {
+      "harness_error": 0,
+      "parse_failure": 0,
+      "valid": 120
+    },
+    "missing": null,
+    "observed": 120,
+    "planned": null,
+    "recovered_call_count": 0
+  }
+}
